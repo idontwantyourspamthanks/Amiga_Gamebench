@@ -1,0 +1,67 @@
+# --- Never commit copyrighted material -------------------------------------
+# Users supply their own legal copies of the games and of Kickstart ROMs.
+
+# Kickstart ROM images (Commodore/Cloanto copyright); AROS is not enough for gating.
+kickstarts/*
+!kickstarts/README.md
+
+# Workbench/OS disk images (Commodore copyright)
+os/**/*.adf
+os/**/*.ADF
+
+# Floppy images anywhere (copyrighted)
+*.adf
+*.ADF
+*.ipf
+*.IPF
+*.dms
+*.DMS
+*.adz
+*.ADZ
+*.lha
+*.LHA
+games/**/originals/
+games/**/alt/
+games/**/disks/
+games/**/extracted/
+
+# Anything containing game RAM, data or imagery
+**/work/snapshots/
+**/work/dumps/
+**/work/ref/
+**/work/**/*.png
+**/work/**/*.bin
+**/work/**/*.sav
+**/*.png
+**/*.sav
+**/*.uss
+**/*.ussx
+**/*.rom
+
+# Build outputs contain patched game files / whole disks
+**/build/
+games/**/dist/
+/dist/*
+!/dist/*.sh
+!/dist/*.md
+
+# --- Local / generated ------------------------------------------------------
+__pycache__/
+*.pyc
+.venv/
+**/*.img
+**/*.gz
+**/*.hlog
+**/local_*
+a.out
+*.o
+*.map
+
+# Manuals and scans (copyrighted)
+**/*.pdf
+**/*.PDF
+**/*.wav
+**/*.WAV
+
+# Status reports for the user (local)
+reports/
