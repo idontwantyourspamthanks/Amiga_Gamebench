@@ -9,11 +9,14 @@ filesystem and in several libraries, so gates must run on real Kickstart.
 
 ## What the harness needs
 
-| File name (expected) | Machine | Notes |
+| File name | Machine | Notes |
 |---|---|---|
-| `kickstart-1.3-a500-a500plus.rom` | A500, A500+ | 256 KB. Kickstart 1.3 rev 34.5. |
-| `kickstart-2.04-a500plus-a600.rom` | A500+, A600 | 512 KB. Useful for the ECS path. |
-| `kickstart-3.1-a1200.rom` | **A1200 (target)** | 512 KB. This is the one the port is gated on. |
+| `os/Kickstart/amiga-os-130.rom` | A500, A500+ | 256 KB, Md5 `82a21c18…`, Kickstart 1.3 rev 34.5. |
+| `os/Kickstart/amiga-os-205-a600.rom` | A600 | 512 KB, Md5 `465646c9…`, Kickstart 2.05. |
+| `os/Kickstart/amiga-os-310-a1200.rom` | **A1200 (target)** | 512 KB, Md5 `64677375…`, Kickstart 3.1 rev 40.68. Boots the game. |
+| `os/Kickstart/amiga-os-310-a600.rom` | A600 | 512 KB, Md5 `e40a5dfb…`, Kickstart 3.1 rev 40.63. |
+
+The harness searches both this folder and `os/Kickstart/`. The 1.3 ROM is also copied here as `kickstart-1.3-a500-a500plus.rom`.
 
 `tools/amigaharness.py` picks the ROM by machine unless you pass one
 explicitly. `tools/amigaharness.py roms` lists what is present and what each

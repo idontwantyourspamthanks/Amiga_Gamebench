@@ -33,22 +33,30 @@ import tempfile
 import time
 from pathlib import Path
 
+try:
+    from PIL import Image
+except Exception:          # screenshot menu detection degrades gracefully
+    Image = None
+
 ROOT = Path(__file__).resolve().parent.parent
 KICKSTARTS = ROOT / "kickstarts"
+OS_KICKSTARTS = ROOT / "os" / "Kickstart"
 
 # MD5 -> description. Only used for reporting; unknown ROMs are still usable.
 KNOWN_ROMS = {
     "85ad74194e87c08904327de1a9443b7a": ("1.2", "Kickstart 1.2 rev 33.180 (A1000/A500)"),
     "82a21c1890cae844b3df741f2762d48d": ("1.3", "Kickstart 1.3 rev 34.5 (A500/A500+)"),
     "dc10d7bdd1b6f450773dfb558477c230": ("2.04", "Kickstart 2.04 rev 37.175 (A500+/A600)"),
-    "646773759326fbac3b2311fd8c8793ee": ("3.1", "CD32 Kickstart 3.1 rev 40.60"),
+    "646773759326fbac3b2311fd8c8793ee": ("3.1", "Kickstart 3.1 rev 40.68 (A1200)"),
+    "e40a5dfb3d017ba8779faba30cbd1c8e": ("3.1", "Kickstart 3.1 rev 40.63 (A600)"),
+    "465646c9b6729f77eea5314d1f057951": ("2.05", "Kickstart 2.05 rev 37.350 (A600)"),
 }
 
 # machine -> (amiga_model, kickstart key, implied options)
 MACHINES = {
     "A500":      ("A500",      "1.3",  {}),
     "A500+":     ("A500+",     "2.04", {}),
-    "A600":      ("A600",      "2.04", {}),
+    "A600":      ("A600",      "2.05", {}),
     "A1200":     ("A1200",     "3.1",  {}),
     "A1200/020": ("A1200/020", "3.1",  {}),
     "A1200/1230": ("A1200/1230", "3.1", {}),
@@ -58,10 +66,11 @@ MACHINES = {
 
 # Preferred ROM file names, in order. `kickstart-3.1-a1200.rom` is the target.
 ROM_NAMES = {
-    "1.2": ["kickstart-1.2-a1000-a500.rom", "kickstart-1.2.rom"],
-    "1.3": ["kickstart-1.3-a500-a500plus.rom", "kickstart-1.3.rom"],
-    "2.04": ["kickstart-2.04-a500plus-a600.rom", "kickstart-2.04.rom", "kickstart-2.05-a600.rom"],
-    "3.1": ["kickstart-3.1-a1200.rom", "kickstart-3.1-a4000.rom", "kickstart-3.1.rom"],
+    "1.2": ["amiga-os-120.rom", "kickstart-1.2-a1000-a500.rom", "kickstart-1.2.rom"],
+    "1.3": ["amiga-os-130.rom", "kickstart-1.3-a500-a500plus.rom", "kickstart-1.3.rom"],
+    "2.04": ["amiga-os-204.rom", "kickstart-2.04-a500plus-a600.rom", "kickstart-2.04.rom"],
+    "2.05": ["amiga-os-205-a600.rom", "kickstart-2.05-a600.rom"],
+    "3.1": ["amiga-os-310-a1200.rom", "kickstart-3.1-a1200.rom", "kickstart-3.1.rom"],
 }
 
 
@@ -87,14 +96,16 @@ def rom_info(path: str | Path) -> dict:
 def find_rom(key: str, explicit: str | None = None) -> Path | None:
     if explicit:
         return Path(explicit)
-    for name in ROM_NAMES.get(key, []):
-        candidate = KICKSTARTS / name
-        if candidate.exists():
-            return candidate
-    # Last resort: any ROM in kickstarts whose parsed version matches.
-    for candidate in sorted(KICKSTARTS.glob("*.rom")):
-        if rom_info(candidate)["version"] == key:
-            return candidate
+    for folder in (KICKSTARTS, OS_KICKSTARTS):
+        for name in ROM_NAMES.get(key, []):
+            candidate = folder / name
+            if candidate.exists():
+                return candidate
+    # Last resort: any ROM in either folder whose recognised version matches.
+    for folder in (KICKSTARTS, OS_KICKSTARTS):
+        for candidate in sorted(folder.glob("*.rom")):
+            if rom_info(candidate)["version"] == key:
+                return candidate
     return None
 
 
@@ -107,6 +118,7 @@ def free_display() -> tuple[str, int]:
 
 class FSUAE:
     def __init__(self, machine: str = "A1200", disks: list[str] | None = None,
+                 images: list[str] | None = None,
                  rom: str | None = None, extra: list[str] | None = None,
                  fast_mb: int | None = None, chip_kb: int | None = None,
                  warp: bool = False, headless: bool = True,
@@ -127,6 +139,7 @@ class FSUAE:
         self.stdout_path = self.scratch / "stdout.txt"
         self.config_path = self.scratch / "test.fs-uae"
         self.disks = [str(Path(d).resolve()) for d in (disks or [])][:4]
+        self.images = [str(Path(d).resolve()) for d in (images or disks or [])][:20]
         self.copy_disks = copy_disks
         if copy_disks:
             copied = []
@@ -138,10 +151,12 @@ class FSUAE:
 
         self.display, display_number = free_display()
         self.xvfb = None
+        self.wm = None
         self.proc = None
         self.window = None
         self._log_pos = 0
         self._in_debugger = False
+        self._menu_open = False
 
         options = {
             "amiga_model": amiga_model,
@@ -162,8 +177,8 @@ class FSUAE:
             "log_file": str(self.log),
             "log_flush": "1",
             "console_debugger": "1" if debugger else "0",
-            "automatic_input_grab": "0",
-            "initial_input_grab": "0",
+            "automatic_input_grab": "1",
+            "initial_input_grab": "1",
             "base_dir": str(self.base),
             "kickstart_file": str(self.rom_path) if self.rom_path else "",
             "warp_mode": "1" if warp else "0",
@@ -178,6 +193,8 @@ class FSUAE:
             options["zorro_iii_memory"] = "0"
         for i, disk in enumerate(self.disks):
             options[f"floppy_drive_{i}"] = disk
+        for i, image in enumerate(self.images):
+            options[f"floppy_image_{i}"] = image
         for item in extra or []:
             if "=" not in item:
                 raise ValueError(f"extra option must be key=value: {item!r}")
@@ -202,9 +219,18 @@ class FSUAE:
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         for _ in range(50):
             if Path(f"/tmp/.X11-unix/X{number}").exists():
-                return
+                break
             time.sleep(0.1)
-        raise RuntimeError(f"Xvfb :{number} did not start")
+        else:
+            raise RuntimeError(f"Xvfb :{number} did not start")
+        # A window manager is required for FS-UAE to take focus and grab the
+        # mouse; without one, pointer motion never reaches the guest.
+        wm = os.environ.get("GAMEBENCH_WM") or shutil.which("twm") or shutil.which("matchbox-window-manager")
+        if wm:
+            self.wm = subprocess.Popen(
+                [wm], env=dict(os.environ, DISPLAY=self.display),
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            time.sleep(0.4)
 
     def _start_emulator(self) -> None:
         env = dict(os.environ, DISPLAY=self.display, SDL_AUDIODRIVER="dummy",
@@ -213,8 +239,12 @@ class FSUAE:
         if not exe:
             raise RuntimeError("fs-uae not found")
         self._stdout = open(self.stdout_path, "wb")
+        cmd = [exe, str(self.config_path), "--stdout"]
+        stdbuf = shutil.which("stdbuf")
+        if stdbuf:
+            cmd = [stdbuf, "-oL"] + cmd
         self.proc = subprocess.Popen(
-            [exe, str(self.config_path), "--stdout"],
+            cmd,
             env=env, stdin=subprocess.PIPE, stdout=self._stdout,
             stderr=subprocess.STDOUT)
         deadline = time.time() + 15
@@ -302,8 +332,19 @@ class FSUAE:
     def mouse_click(self, button: int = 1) -> None:
         self._xdotool("click", str(button))
 
+    def mouse_down(self, button: int = 1) -> None:
+        self._xdotool("mousedown", str(button))
+
+    def mouse_up(self, button: int = 1) -> None:
+        self._xdotool("mouseup", str(button))
+
+    def focus(self) -> None:
+        self._xdotool("windowactivate", "--sync", self.window)
+        self._xdotool("windowfocus", self.window)
+
     def grab_mouse(self) -> None:
-        """Move the pointer into the window and click, so FS-UAE grabs it."""
+        """Focus the window and click, so FS-UAE grabs the mouse."""
+        self.focus()
         self.mouse_to(360, 280)
         self.mouse_click(1)
         time.sleep(0.3)
@@ -320,6 +361,7 @@ class FSUAE:
                 raise RuntimeError("debugger did not activate (is console_debugger=1?)")
             time.sleep(0.5)
             self._in_debugger = True
+            self._menu_open = True
             before = len(self.tail(2_000_000))
         for command in commands:
             self.proc.stdin.write((command + "\n").encode())
@@ -376,6 +418,37 @@ class FSUAE:
         self.debugger("g", wait=0.1)
         self._in_debugger = False
 
+    def frame_stats(self) -> dict:
+        """Cumulative frame counter/time from the debugger's `c` command."""
+        out = self.debugger("c", wait=0.4)
+        m = re.search(r"frames:\s*(\d+)\s+time:\s*(\d+)", out)
+        avg = re.search(r"Average frame time:\s*([\d.]+)\s*ms", out)
+        if not m:
+            raise RuntimeError(f"no frame stats in debugger output:\n{out[-800:]}")
+        frames, time_us = int(m.group(1)), int(m.group(2))
+        return {
+            "frames": frames,
+            "time_us": time_us,
+            "seconds": time_us / 1e6,
+            "avg_frame_ms": float(avg.group(1)) if avg else None,
+            "fps": frames / (time_us / 1e6) if time_us else None,
+        }
+
+    def fps(self, seconds: float = 5.0) -> dict:
+        """Measure presented-frame rate over `seconds` of emulated time.
+
+        Leaves the emulator paused in the debugger; call resume() to continue.
+        """
+        first = self.frame_stats()
+        self.resume()
+        time.sleep(seconds)
+        second = self.frame_stats()
+        df = second["frames"] - first["frames"]
+        dt = (second["time_us"] - first["time_us"]) / 1e6
+        return {"seconds": dt, "frames": df,
+                "fps": df / dt if dt else None,
+                "start": first, "end": second}
+
     def registers(self) -> str:
         return self.debugger("r", wait=0.3)
 
@@ -391,12 +464,35 @@ class FSUAE:
     def history(self, count: int = 32) -> str:
         return self.debugger(f"H {count}", wait=0.5)
 
+    def menu_open(self) -> bool:
+        """True when the FS-UAE host menu panel is visible on the right."""
+        if Image is None:
+            return self._menu_open
+        path = self.scratch / "menucheck.png"
+        self.screenshot(path)
+        im = Image.open(path).convert("L")
+        w, h = im.size
+        box = im.crop((max(0, w - 190), 0, w, h))
+        total = box.size[0] * box.size[1]
+        mean = sum(i * c for i, c in enumerate(box.histogram())) / total
+        return mean > 4
+
+    def close_menu(self) -> None:
+        """Close the FS-UAE host menu if it is open (F12 toggles it)."""
+        if self.menu_open():
+            self._xdotool("key", "--window", self.window, "F12")
+            time.sleep(0.2)
+        self._menu_open = False
+
     def resume(self) -> None:
         if self._in_debugger:
             self.proc.stdin.write(b"g\n")
             self.proc.stdin.flush()
             self._in_debugger = False
             time.sleep(0.2)
+            if self._menu_open:
+                self._xdotool("key", "--window", self.window, "F12")
+                self._menu_open = False
 
     # --- shutdown -------------------------------------------------------
     def close(self) -> None:
@@ -407,6 +503,12 @@ class FSUAE:
             except subprocess.TimeoutExpired:
                 self.proc.kill()
                 self.proc.wait(timeout=5)
+        if self.wm and self.wm.poll() is None:
+            self.wm.terminate()
+            try:
+                self.wm.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                self.wm.kill()
         if self.xvfb and self.xvfb.poll() is None:
             self.xvfb.terminate()
             try:
@@ -427,9 +529,11 @@ class FSUAE:
 
 def cmd_roms(_args) -> int:
     print(f"kickstart directory: {KICKSTARTS}")
-    found = sorted(KICKSTARTS.glob("*.rom"))
+    found = sorted(KICKSTARTS.glob("*.rom")) + sorted(OS_KICKSTARTS.glob("*.rom"))
     if not found:
         print("  (none)")
+    print(f"  {KICKSTARTS}" + ("" if KICKSTARTS.exists() else " (missing)"))
+    print(f"  {OS_KICKSTARTS}" + ("" if OS_KICKSTARTS.exists() else " (missing)"))
     for path in found:
         info = rom_info(path)
         print(f"  {path.name:44s} {info['size']:>7} bytes  md5 {info['md5']}  "

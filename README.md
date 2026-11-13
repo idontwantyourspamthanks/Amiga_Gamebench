@@ -18,9 +18,9 @@ Nothing in this repository is a game file. The patch tools verify every original
 | Item | State |
 |---|---|
 | Bench (layout, ADF/hunk tools, disassembler, FS-UAE harness, skills) | built |
-| Kickstart ROMs | 1.3 present (A500 testing); **3.1 for the A1200 is missing** |
+| Kickstart ROMs | 1.3, 2.05, 3.1 (A1200 and A600) present in `os/Kickstart/`; A1200 3.1 boots the game |
 | Disk versions | chosen and documented in `games/in_progress/Midwinter-2/README.md` |
-| Midwinter II port | not started; plan in `PLAN.md` |
+| Midwinter II port | baseline booting on A1200 3.1; plan in `PLAN.md` |
 | Midwinter (1) | disks collected; not started |
 
 ## Machines and targets

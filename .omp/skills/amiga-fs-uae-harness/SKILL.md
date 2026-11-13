@@ -26,8 +26,9 @@ finally:
 
 - `machine`: `A500`, `A500+`, `A600`, `A1200`, `A1200/020`, `A1200/1230`, `A1200/1240`, `A4000`.
   - `A1200` is a stock 68EC020 with 24-bit addressing; `A1200/020` is a full 68020; `A1200/1230` is a Blizzard 1230-IV with 8 MB fast RAM by default.
-- ROM lookup: explicit `rom=`, else `<gamebench>/kickstarts/` by machine. `python3 tools/amigaharness.py roms` prints what is present and what is missing.
-- **Missing Kickstart = AROS.** FS-UAE ships `aros-amiga-m68k-rom.bin`; it boots, but it is not Kickstart. `FSUAE.using_aros` is True and such runs must not be used as compatibility or performance evidence. The A1200 target needs **Kickstart 3.1**; an A500 run on 1.3 is the fallback regression loop, not proof of A1200 behaviour.
+- ROM lookup: explicit `rom=`, else `<gamebench>/kickstarts/` then `<gamebench>/os/Kickstart/`, by machine.
+- Present: 1.3 (A500), 2.05 (A600), 3.1 rev 40.68 (A1200, **the target**) and 3.1 rev 40.63 (A600). `python3 tools/amigaharness.py roms` prints what is present and what is missing.
+- **Missing Kickstart = AROS.** FS-UAE ships `aros-amiga-m68k-rom.bin`; it boots, but it is not Kickstart. `FSUAE.using_aros` is True and such runs must not be used as compatibility or performance evidence. The A1200 target uses the 3.1 rev 40.68 ROM; an A500 run on 1.3 is the fallback regression loop, not proof of A1200 behaviour.
 - Add `extra=['fast_memory=64']`, `chip_kb=`, `fast_mb=` to override.
 - `warp=True` runs the emulator as fast as possible; screenshots are fine, but timing is meaningless.
 

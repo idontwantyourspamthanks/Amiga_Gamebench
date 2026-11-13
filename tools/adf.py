@@ -44,16 +44,15 @@ BOOTBLOCK_END = 1024
 
 
 def bootblock_checksum(block: bytes) -> int:
-    """The bootblock checksum: sum of big-endian longs, ignoring the field itself."""
+    """Amiga bootblock checksum: sum of big-endian longs with end-around carry
+    applied on every addition, field at +4 skipped, then complemented."""
     total = 0
     for off in range(0, BOOTBLOCK_END, 4):
-        value = struct.unpack_from(">I", block, off)[0]
         if off == BOOTBLOCK_CHECKSUM_OFFSET:
             continue
-        total = (total + value) & 0xFFFFFFFF
-    # End-around carry, then complement.
-    while total >> 16:
-        total = (total & 0xFFFF) + (total >> 16)
+        total += struct.unpack_from(">I", block, off)[0]
+        if total > 0xFFFFFFFF:      # end-around carry, per addition
+            total = (total + 1) & 0xFFFFFFFF
     return (~total) & 0xFFFFFFFF
 
 
