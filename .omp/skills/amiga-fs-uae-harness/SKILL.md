@@ -88,3 +88,22 @@ FS-UAE save states exist (`save_states=1`, `F12` menu) but are not exposed by th
 ## Concurrency
 
 Keep to 2-3 emulator instances at once. Each costs a core; a machine under load misses input clicks and alters wall-clock-based measurements. Measure FPS with the debugger frame counters (emulated time), not host stopwatches.
+
+## Disk swapping (verified)
+
+FS-UAE has no CLI/remote disk swap in this build; drive the on-screen menu:
+- **F12 opens/closes** the menu; **Escape also closes** it. Focus starts on
+  PAUSE each time the menu opens.
+- From PAUSE, **Down x7** reaches the `df0` media item (with one drive and the
+  default input rows). Enter opens `INSERT INTO DF0`, whose list is
+  `EJECT, d1, d2, d3, ...`, current image highlighted. Enter inserts; the menu
+  closes.
+- The layout shifts with the number of input rows, so `amigaharness.swap_floppy`
+  locates the `REMOVABLE MEDIA` section by the menu's blue selection bars
+  (x=540): the last blue section bar is the header, and the first item below it
+  is `df0`. Do not hard-code y coordinates.
+- A window manager (twm) is required for FS-UAE to take focus and grab input
+  under Xvfb; the harness starts one if `GAMEBENCH_WM` is set or `twm` is in
+  `PATH`.
+- `writable_floppy_images=0` keeps the supplied ADFs read-only (writes go to
+  overlays); the game's disk prompts still work.
