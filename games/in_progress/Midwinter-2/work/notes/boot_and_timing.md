@@ -121,3 +121,61 @@ endcli >nil:
 - The "Press 'M' for Mouse" strings are in the `MWII` file but not in the
   relocated flat image; they are most likely symbol/debug or an unloaded
   section. Do not assume a control-selection prompt is live.
+
+## Disk-wait state (2026-11-13, after graphics disk insert)
+
+- The game reaches the hallway "WAR ROOM / RAIDS / CONTROL / TRAINING" screen
+  but sits in a tight busy-wait: PC `$3EBAA`, `TST.W $00060424`, variable 0.
+- The level-3 autovector at that point is `$3DFC8`, i.e. flat `$10708` when
+  base `$2D8C0` — **not** `$16EF8`. The `$16EF8` handler seen earlier is a
+  later/other module. So `$393AE` reading 0 does **not** prove interrupts are
+  off; do not use it as a liveness indicator at this stage.
+- Swapping d1/d2/d3 in `df0` does not clear the wait. The code around the wait
+  is **not** found in the MWII flat image at `$11CEA` (bytes differ), so a
+  module is loaded elsewhere/relocated at this stage. Next step: dump RAM in
+  this state, disassemble around `$3EBAA`, and identify the owning disk file
+  before assuming which disk/prompt it wants.
+
+## Phase-dependent base (important)
+
+The load base is **not constant across the game's phases**:
+- At the hallway/disk-wait state, the level-3 vector is `$3DFC8`, which matches
+  flat `$16EF8` with **code base `$270D0` and data base `$270D8`** (the VBL
+  increments `$60486` = flat `$393AE` + `$270D8`; the wait routine at `$3EB72`
+  matches flat `$17AA2` byte for byte).
+- A later state (full 2 MB dump after further loading) resolved four signatures
+  to base `$2D8C0`. Either the game relocates/reloads a module, or that dump was
+  from a different phase. **Always re-derive the base for the phase under test**;
+  never reuse `$2D8C0` blindly.
+
+## The hallway wait is an input-event wait
+
+Flat routine `$17AA2` (runtime `$3EB72` at base `$270D0`):
+
+```
+17aa4: tst.w  $40E26          ; input enabled
+17aaa: bne.b  $17ADA
+17aac: move.w $38600,d0       ; joystick-1 flag
+17ab2: or.w   $3934C,d0       ; input flags
+17ab8: beq.b  $17aac
+...
+17ada: tst.w  $3934C          ; wait for any input flag
+17ae0: beq.b  $17ada
+17ae2: move.w $3934C,$3934E
+17aec: move.w #$FFFF,$39336   ; VBL semaphore
+17af4: tst.w  $39336
+17afa: bne.b  $17af4
+17afc: move.w (a7)+,d0
+17afe: rts
+```
+
+`$3934C` is written once per VBL by the sampler `$1765E` from `$39930`:
+- bit 0 = right mouse button / POTGOR bit 2 (verified: right button -> 1)
+- bit 1 = left mouse button / CIA-A PRA bit 6 (verified: left button -> 2)
+
+`$40E26` is 1 at this phase, so the wait only watches `$3934C`.
+The game re-enters this wait after consuming an event (many callers), so a
+single click does not necessarily change the screen. Input is delivered; the
+open question is which **event code/mode** the menu caller accepts and whether
+the pointer is drawn from the joystick position (`$3933C/$39340`) or the mouse
+accumulators (`$39344/$39348`).

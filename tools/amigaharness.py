@@ -532,6 +532,16 @@ class FSUAE:
         mean = sum(i * c for i, c in enumerate(box.histogram())) / total
         return mean > 4
 
+    def resume_raw(self) -> None:
+        """Resume (`g`) without touching the menu; then close it with Escape."""
+        if self._in_debugger:
+            self.proc.stdin.write(b"g\n")
+            self.proc.stdin.flush()
+            self._in_debugger = False
+            time.sleep(0.2)
+        self.key("Escape")
+        time.sleep(0.3)
+
     def close_menu(self) -> None:
         """Close the FS-UAE host menu if it is open (F12 toggles it)."""
         if self.menu_open():
