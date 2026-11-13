@@ -179,3 +179,27 @@ single click does not necessarily change the screen. Input is delivered; the
 open question is which **event code/mode** the menu caller accepts and whether
 the pointer is drawn from the joystick position (`$3933C/$39340`) or the mouse
 accumulators (`$39344/$39348`).
+
+## Menu navigation (2026-11-13)
+
+- **The mouse must be on port 0.** Adding `joystick_port_0=keyboard` disconnects
+  the mouse and the menu cursor freezes. With the default mouse device the
+  cursor moves, and the game highlights the icon under it (RAIDS was hovered).
+- FS-UAE loses the first relative motion after the pointer grab: send a
+  priming `mouse_rel(1,0)` after the grab click, then the real move.
+- Cursor position can be detected from screenshots: it is a 16x16 white arrow,
+  connected-component area ~87, at the top of the screen; label boxes are
+  excluded (see the closed-loop navigator used in testing).
+- Hovering RAIDS works; **activation does not**: left click, right click, space
+  (tap or hold) leave the screen unchanged.
+- Decisive test: writing `4e71 4e71 4e71 4e71` over the first wait
+  (`$3EBAA`) moves execution to the **second** wait at `$3EBC4`
+  (`tst.w $6040E` / flat `$39336`), which never clears. So the menu routine is
+  genuinely blocked in this wait pair, and the VBL semaphore `$39336` is not
+  being cleared at this point.
+- The sampler `$1765E` is called from `$17382` in the VBL chain
+  (`$16EF8 -> $17382 -> $177B0, $1765E`), and clears `$39336` only when
+  `$40E26` (input enable) is non-zero and no button bits are set.
+  Next: read `INTENA`/`INTREQ` and `$40E26` at the NOP state to determine why
+  the semaphore is not cleared (interrupt disabled, or input disabled during
+  the wait).
