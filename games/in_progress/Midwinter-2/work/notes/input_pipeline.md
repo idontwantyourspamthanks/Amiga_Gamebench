@@ -117,3 +117,19 @@ starting point. Tune against traces, not by feel.
   rate; measured next.
 - The per-vehicle control block base and stride (find the code that builds
   `a0 = base + type*stride` before `$27D8E`).
+
+## Runtime base and verification status (2026-11-13)
+
+- The executable loads at **`$2D8C0`** on Kickstart 3.1 A1200. Add that base to
+  every flat offset above: sampler `$44F2E`, consumer `$28588` -> `$55E48`,
+  VBL `$16EF8` -> `$447B8`, flip `$24A64` -> `$522E4`, `$39344` -> `$66C04`.
+  Four fixed-opcode signatures agree on the base.
+- `$39398`, `$39344/$39348`, `$3933C/$39340` lie in the DATA hunk (not BSS).
+  Their initial file values are 0; the sampler writes them.
+- At the frozen hallway menu, `$39398` read 0 and `$39344/$3933C` read 0, while
+  the VBL counter `$393AE` read 0 too. If the VBL handler were running,
+  `$393AE` should increment, so either the game was waiting for a disk, or the
+  address is wrong. The disk-swap chain is being tested now; until it completes,
+  treat the mode-table and deadzone field mapping below as `[INFERENCE]`
+  (the fixed `cmp.w $14(a0)` / `$12(a0)` structure is confirmed against the
+  disassembly, but not yet exercised live).

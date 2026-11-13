@@ -464,6 +464,61 @@ class FSUAE:
     def history(self, count: int = 32) -> str:
         return self.debugger(f"H {count}", wait=0.5)
 
+    def _menu_blue_runs(self, path: str | Path) -> list[tuple[int, int]]:
+        """Rows of the FS-UAE menu's blue selection/section bars at x=540."""
+        if Image is None:
+            return []
+        im = Image.open(path).convert("RGB")
+        width, height = im.size
+        runs, start = [], None
+        for y in range(height):
+            r, g, b = im.getpixel((540, y))
+            blue = b > 80 and b > r + 30 and b >= g - 5
+            if blue and start is None:
+                start = y
+            elif not blue and start is not None:
+                runs.append((start, y - 1))
+                start = None
+        if start is not None:
+            runs.append((start, height - 1))
+        return runs
+
+    def menu_focus_df0(self, tries: int = 12) -> bool:
+        """Open the FS-UAE menu and move the selection onto the df0 media item.
+
+        The menu remembers focus between openings, so the selection is found by
+        pixel position: the last blue section bar is REMOVABLE MEDIA and its
+        first item (df0) sits just below it.
+        """
+        self.focus()
+        self.key("F12")
+        time.sleep(0.7)
+        for _ in range(tries):
+            shot = self.screenshot(self.scratch / "menucheck.png")
+            runs = self._menu_blue_runs(shot)
+            lower = [r for r in runs if r[0] >= 350]
+            if lower:
+                header = min(lower, key=lambda r: r[0])
+                target = header[1] + 22
+                if any(r != header and r[0] <= target <= r[1] for r in runs):
+                    return True
+            self.key("Down")
+            time.sleep(0.3)
+        return False
+
+    def swap_floppy(self, current: int, target: int) -> None:
+        """Insert image `target` into df0 (0=EJECT, 1..=floppy_image_N-1)."""
+        if not self.menu_focus_df0():
+            raise RuntimeError("could not focus the df0 media item")
+        self.key("Return")
+        time.sleep(0.7)
+        steps = target - current
+        for _ in range(abs(steps)):
+            self.key("Down" if steps > 0 else "Up")
+            time.sleep(0.15)
+        self.key("Return")
+        time.sleep(0.8)
+
     def menu_open(self) -> bool:
         """True when the FS-UAE host menu panel is visible on the right."""
         if Image is None:

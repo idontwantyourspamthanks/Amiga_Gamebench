@@ -87,3 +87,37 @@ endcli >nil:
   nothing; use `S` dumps or `Z`/`T` once the game is running).
 - Why `mwII` fails when `INTRO` is skipped entirely (a resource left by the
   intro, or a protection check in the intro's prologue).
+
+## Verified later on 2026-11-13 (A1200, Kickstart 3.1 rev 40.68)
+
+- Kickstart 3.1 A1200 ROM is present in `os/Kickstart/amiga-os-310-a1200.rom`
+  and boots the SPL disks. The game reaches its title and the hallway menu.
+- **Runtime load base is `$2D8C0`.** Four independent fixed-opcode signatures
+  (input consumer, VBL handler, sampler, copper flip) all resolve to the same
+  base in a full 2 MB chip-RAM dump. Absolute operands in the flat image are
+  relocated by that base, which is why a raw byte search of runtime code
+  against the base-0 flat image fails.
+- FS-UAE host menu: **F12 toggles**, **Escape closes** it; focus starts on
+  PAUSE. From PAUSE, Down x7 selects the `df0` media item; Enter opens
+  `INSERT INTO DF0` whose list is `EJECT, D1, DISK 2, DISK 3, ...` (current
+  image highlighted). Enter on an image inserts it. The window manager (twm)
+  is required for FS-UAE to take focus/grab input under Xvfb.
+- Disk model in the game's own strings: START-UP (disk 1), GRAPHICS (disk 2),
+  MISSIONS (disk 3), plus PERSONNEL and CAMPAIGN disks for campaign saves.
+  The first prompt is `Insert Graphics Disk / Into any drive`; inserting disk 2
+  clears it and the game shows its title/intro, then the hallway menu.
+- At the hallway with only disk 2 in `df0`, VBL counter `$393AE` read 0 and the
+  input sampler was idle. `[INFERENCE]` the game is waiting for the START-UP
+  disk again; the swap-back test is in progress. Do not treat "VBL=0" as a
+  verdict until the disk state is known.
+
+### Corrections to earlier text in this note
+
+- `$40E26` is in the DATA hunk, not BSS; its value at the menu was `$4173`.
+  `tst.w $40E26` therefore tests an initialised word, not a 0/1 flag. Do not
+  read it as "input enabled" without checking the surrounding code.
+- `dos.library` at runtime `$2BEE4` is below the MWII base `$2D8C0`; it belongs
+  to the OS/shell, not MWII. It is not a base-finding anchor.
+- The "Press 'M' for Mouse" strings are in the `MWII` file but not in the
+  relocated flat image; they are most likely symbol/debug or an unloaded
+  section. Do not assume a control-selection prompt is live.
