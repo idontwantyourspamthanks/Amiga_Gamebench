@@ -203,3 +203,20 @@ accumulators (`$39344/$39348`).
   Next: read `INTENA`/`INTREQ` and `$40E26` at the NOP state to determine why
   the semaphore is not cleared (interrupt disabled, or input disabled during
   the wait).
+
+## Correction: the wait is not deadlocked
+
+A breakpoint on the sampler's clear (`$3E79E`, `CLR.W $6040E`) **hits every
+VBL**: the VBL counter `$60486` was 0x118B and the semaphore is cleared by the
+VBL chain. Reading `$6040E` as 0xFFFF only samples the moment between the wait
+routine setting it and the next VBL; the wait pair is normal.
+
+Remaining front-end problem: the menu is static and activation does nothing
+(left click, right click, space tap/hold, port-1 fire, Return), even though the
+mouse moves and RAIDS is under the pointer. All three disks mounted, one drive
+with swaps, mouse-only and keyboard-joystick-on-port-1 configs all behave the
+same. This points at the game's **menu state/disk condition** (likely a
+campaign/personnel disk or a control-method state), not at the wait code.
+Next options: (a) supply/confirm a campaign or personnel disk; (b) bypass the
+menu by seeding the game's mission state via the debugger and entering a 3D
+view directly, which is acceptable for a measurement harness.
