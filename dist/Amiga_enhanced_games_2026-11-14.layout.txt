@@ -19,3 +19,15 @@ Use
                the volume contents on any partition (files must sit in the root)
   Gotek-style floppy emulators cannot hold a hard disk image
 e94fae2234f92f4e52e429e157ccdada  dist/Amiga_enhanced_games_2026-11-14.hdf
+
+Boot test (FS-UAE A1200, KS 3.1, no floppies, hard_drive_0 = this image)
+  hallway     666090c5c090558510ee8317c654e01c
+  level pick  7d4a634d95f7bb6dad7ea072aee0d9fa
+  raid map    7816fe1d04bee4ebf78bbb6419492e97
+  cockpit     aaaf2da438becd2b5fc64073a7111439
+  (played through with the same held-press menu sequence as the floppy build)
+
+Rebuild order
+  python3 tools/mw2patch.py apply  <MWII from d1>  games/in_progress/Midwinter-2/work/build/MWII_direct
+  python3 tools/make_amiga_hd.py            -> this .hdf
+  python3 tools/make_amiga_zip.py           -> Midwinter2-Amiga-hd-<date>.zip

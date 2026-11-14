@@ -117,7 +117,15 @@ Only after timing and controls are gated. Candidate work, in order of expected v
 
 Every change needs an identical-picture gate and a measured fps gain. No screenmode changes without approval.
 
-## P7 — Release
+## P7 — Release (in progress)
+
+Delivered 2026-11-14: bootable 32 MB hard-disk image (`dist/Amiga_enhanced_games_<date>.hdf`)
+with Workbench 3.1 and the patched game at the volume root, an HDD install zip
+(`dist/Midwinter2-Amiga-hd-<date>.zip`) and `dist/run_hd.sh`; boot-tested from the
+image through the front end into the cockpit. The game must sit in the volume
+root (its own DH0 installer layout). Still to do: the credit line, the cold-boot
+matrix, and single-floppy-drive behaviour with swaps.
+
 
 - ADF set (3 disks) built from the SPL originals; startup sequence replaced: credit line `vX.Y enhanced by dad_prg`, `INTRO` skipped, `mwII` started.
 - No hard-disk dependency; test with a single floppy drive and the required disk swaps.
