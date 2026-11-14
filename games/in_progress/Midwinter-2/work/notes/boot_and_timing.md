@@ -308,3 +308,11 @@ The menu is driven by **held** mouse presses, not clicks. With a 1 s hold:
 A quick click is missed by the front end's VBL sampler (`$17B1E`); a 1 s press
 always registers. All of this is now scripted in
 `games/in_progress/Midwinter-2/tools/mw2harness.py`.
+
+## No disk swapping needed: mount all three drives (2026-11-14)
+
+The game accepts the graphics and missions disks in **any drive**. With
+`FSUAE(disks=[d1, d2, d3])` (df0/d1, df1/d2, df2/d3) every "insert X disk
+into any drive" prompt is satisfied automatically: boot from d1, hold-press
+RAIDS, hold-press INTERMEDIATE, click an island, press space, and the CAMARGO
+briefing appears with the question and book icons - no swaps at all.

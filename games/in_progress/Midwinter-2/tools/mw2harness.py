@@ -48,9 +48,17 @@ def boot(h):
     h.wait(0.3)
 
 
+BRIEFING_QUESTION = (75, 420)
+START_GAME = None  # filled in once the thumbs-up position is known
+
+
 def boot_to_easy(disks=None, images=None):
-    """Return an FSUAE instance sitting on the raid map at difficulty chosen."""
-    disks = disks or [D1]
+    """Return an FSUAE instance sitting on the raid map.
+
+    Mounting all three disks in df0/df1/df2 satisfies the game's
+    "insert X disk into any drive" prompts without any swapping.
+    """
+    disks = disks or [D1, D2, D3]
     images = images or [D1, D2, D3]
     h = FSUAE(machine='A1200', disks=disks, images=images, warp=True)
     boot(h)
