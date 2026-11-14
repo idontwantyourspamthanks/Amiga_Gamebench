@@ -69,3 +69,18 @@
   xdftool; the written MWII round-trips byte-identically).
 - Boot/phased verification is running; the patched skeleton with `bgt +4`
   (`b06800146e0430280014b0680016`) identifies the patched code in RAM.
+
+## Clamp probe on the patched build (2026-11-14)
+
+In the patched cockpit, poking the accumulator `$6D404`:
+
+| poke | value a tick later | verdict |
+|---|---|---|
+| `$7FFF` | `$7FFF` | consumer did **not** clamp — not called in this state |
+| `$0001` | `$01FF` | something re-accumulated (poller active), consumer did nothing |
+
+So the patched routine is correctly loaded but is **not on the executed path**
+while the jeep is stationary at mission start; the input poller is running and
+accumulating. Next probe (running now): breakpoint on the patched consumer
+(matched by the dump's patched skeleton, in-session) and read the registers if
+it fires, to find whether/when the control step calls it.
