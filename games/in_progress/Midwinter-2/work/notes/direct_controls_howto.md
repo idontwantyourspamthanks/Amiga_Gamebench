@@ -451,3 +451,31 @@ VBLs here).
 | In J mode keys do nothing | The FS-UAE config lacks `joystick_port_1=keyboard`, or the window has no focus (`h.focus()`). |
 | Screenshot shows the FS-UAE menu on the right | The menu is open; press Escape (only when it really is open). |
 | `Ungrab input` in the log | Normal after entering the debugger. |
+
+---------------------------------------------------------------------------------------------------
+
+## 8. Finding the game's own clock (VBL counters)
+
+The game's VBL handler ends with the same fingerprint in every load phase:
+`jsr <routine>` followed by two `addq.w #1,<abs>` and a `clr.w <abs>`:
+
+```python
+import re
+m = re.search(rb'\x4e\xb9([\s\S]{4})\x52\x79([\s\S]{4})\x52\x79([\s\S]{4})\x42\x79', ram)
+c1 = int.from_bytes(m.group(2), 'big')   # general frame/VBL counter
+c2 = int.from_bytes(m.group(3), 'big')   # wrapped-at-6 counter (1/6 s tick)
+```
+
+In one observed run these were `$4076` and `$476C` (example only — always
+re-derive them in the session's dump). `pr.long(h, c1)` then a `time.sleep(N)`
+and a second read gives the vertical-sync rate directly.
+
+Two traps seen while measuring:
+
+- The counters **only advance after `MWII` has installed its handler**. On the
+  title/cracktro screen they read a constant 0, which looks like a frozen
+  machine but is not: reach the cockpit (§1) before measuring.
+- `video_sync=1` with this configuration stopped the emulator entirely
+  (`frame_stats` returned 0 frames). Use the default `video_sync=0` and
+  `warp=0` for real-time measurements; warp multiplies emulated time and must
+  never be used for rate numbers.
