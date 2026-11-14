@@ -70,3 +70,14 @@ rendering keeps running.
   |---:|---|
   | ~1 | sim runs once per presented frame -> frame-locked, ST fix needed |
   | > 1 and machine-independent | sim runs on its own clock -> nothing to port |
+
+### Navigation must run in warp; rate ratios do not care
+
+Every fixed `wait()` in `boot_to_cockpit` assumes warp speed. At `warp=0` the
+same recipe does not reach the cockpit in the allotted time: the screenshots from
+the non-warp runs show the boot/debugger overlay, not the cockpit, which is why
+those sessions produced "no hits" and "0 VBL/s".
+
+The **frames-per-tick ratio** is warp-independent (frames and ticks both scale
+with emulated time), so the logic-rate test is valid in warp. Only absolute
+"x per wall second" figures require `warp=0` *after* the cockpit is reached.
