@@ -241,3 +241,21 @@ view directly, which is acceptable for a measurement harness.
   selection (likely a second click/fire or a key), not another input mapping.
 - The `$382E0=0` screen is the hallway; `$11900` (sets `$382E0=5`) is a later
   screen, not the hallway.
+
+## Corrected activation test (verified cursor)
+
+- `amiganav.move_to` now converges and `find_cursor` keeps the arrow over labels.
+  The RAIDS click was repeated only after `find_cursor` reported (273,131),
+  i.e. the pointer was genuinely on the label. The screen still does not change
+  (hashes differ only by cursor position).
+- Mounting blank OFS `campaign` and `personnel` disks as df2/df3 (startup in
+  df0, graphics in df1) also changes nothing.
+- PERSONNEL and WAR ROOM were tested the same way (verified positions
+  531,55 and 198,55): no transition.
+- Selection state is definitely being set: `$3749C=0`, `$383A6=$FFFF`,
+  `$3934C=$D`, `$40E26=1`, `$382E0=0`.
+- **Next static target:** `$44992` is written from `$40E4E` at `$14A0E`
+  (`$149C2`) and read by other screen handlers at `$111A8`, `$12994`,
+  `$12B0C`, `$12C1E`, `$135B4`, `$13672`. Trace those consumers and the
+  screen dispatcher; the hallway's transition gate is among them.
+  `$4495C`/`$44960` are per-screen flags set/cleared in `$149C2`.
