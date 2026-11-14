@@ -76,7 +76,13 @@ operands relocate correctly. No startup-sequence changes, nothing to allocate,
 and the patch survives disk swaps because it lives in the loaded code. See
 `tools/mw2patch.py` and `games/in_progress/Midwinter-2/patches/p5_direct.s`.
 
-## P4 — Timing
+## P4 — Timing (settled: nothing to port)
+
+Measured 2026-11-14: the Amiga build is already locked to the 50 Hz vertical
+blank (`timing_baseline.md`: A1200 and A500 both run at emulated time 1.03x wall
+at real speed). A faster CPU gives rendering headroom, not game speed, so the
+ST scheduler patches have no Amiga counterpart. All remaining speed work is
+P6 rendering work under the identical-picture gate.
 
 Mirror the ST design:
 - free-running real-time counter from the level-3 VBL (50 Hz PAL; handle 60 Hz NTSC), independent of the game's counters;
