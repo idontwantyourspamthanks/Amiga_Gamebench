@@ -65,3 +65,38 @@ applies to them. This is the Amiga equivalent of the ST `$6FB6` yoke.
   stops on release.
 - `$5F5DA/$5F5DC` stay the single hand-off to the rate handlers, so the
   patch does not need to touch the per-type tables.
+
+## 5. Live layout differs from the flat image (2026-11-14)
+
+The flat image built at base `$270D0` is **not** the runtime layout: the loader
+places the hunks elsewhere (the front end's live poller is at `$44F1E`, not
+`$1765E`; the live consumer is at `$55E48`, not `$28588`).
+
+The reliable way to find live addresses is to scan live RAM for the fixed
+hardware-register operands, which are never relocated:
+
+```
+move.w $DFF00A,d0     30 39 00 0D FF 0A      (mouse counters)
+move.w $DFF00C,d2     34 39 00 0D FF 0C      (joystick)
+btst.b #2,$DFF016     08 39 00 02 00 DF F0 16
+btst.b #6,$BFE001     08 39 00 06 00 BF E0 01
+```
+
+Live addresses found this way in the SPL build (menu session, 1 MB dump):
+
+| Purpose | Live address |
+|---|---|
+| mouse poller | `$44F1E` |
+| poller mode | `$66C60` |
+| poller gate | `$6E6EE` |
+| mouse X accumulator | `$66C0C` |
+| mouse Y accumulator | `$66C10` |
+| UI pointer X/Y | `$66C04` / `$66C08` |
+| button bits | `$66C14` |
+| consumer X -> input | `$55E48` -> `$65DD2` |
+| consumer Y -> input | `$55E7A` -> `$65DD4` |
+| joystick block | `$67208/$67210/$6720C/$6721C` (port 1 ramps) |
+
+The consumer at `$55E48` is byte-for-byte the routine described in §2 with the
+live operands. A patch must therefore be built from **live** addresses, or
+located at load time by scanning for the poller pattern.
