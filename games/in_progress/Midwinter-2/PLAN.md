@@ -69,7 +69,12 @@ Design choice to settle in P1/P2:
 - **B. Separate payload file** loaded by a replaced `S/startup-sequence`, copied to a fixed free RAM area, then `mwII` started with patches applied. Simpler byte-wise, but needs an `AllocMem` or fixed-address proof and must survive disk swaps (df0 is swapped; the payload must already be in RAM).
 - **C. Live-only patches** for experiments via the debugger (`W`); never shipped.
 
-Recommended: **B** for iteration, **A** for the release if the hunk writer is clean; both gated by cold boots.
+Settled and shipped for P5 (**variant of A**): the blob is appended to the end of
+CODE hunk 0 (not a separate hunk), the sites become `jmp <blob>`, and the tool
+rewrites the hunk-0 RELOC32 table so the blob's operands and the two `jmp`
+operands relocate correctly. No startup-sequence changes, nothing to allocate,
+and the patch survives disk swaps because it lives in the loaded code. See
+`tools/mw2patch.py` and `games/in_progress/Midwinter-2/patches/p5_direct.s`.
 
 ## P4 — Timing
 
