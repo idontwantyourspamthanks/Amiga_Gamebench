@@ -131,3 +131,24 @@ Pollers:
 - mouse `$44F1E` (gate `$6E6EE`), accumulators `$66C0C/$66C10`, consumer `$55E48` -> `$65DD2/$65DD4`;
 - joystick `$45070` (gate `$6E6EA`), ramps `$67208..$6721C`;
 - keyboard `$4516A` (gate `$6E6EC`), same ramp scheme, key-held flags at `$672E6+$33..$6F`, ramp rates `$67218/$6721C/$67220/$67224`.
+
+## 8. In-game copies and the open consumer (2026-11-14)
+
+The cockpit runs a **second copy** of the poller with different addresses:
+
+| purpose | cockpit | hallway |
+|---|---|---|
+| mouse poller | `$4B716` | `$44F1E` |
+| mouse gate | `$74EE6` | `$6E6EE` |
+| mouse acc X/Y | `$6D404` / `$6D408` | `$66C0C` / `$66C10` |
+| mode | `$6D458` | `$66C60` |
+| M/J/K selector | `$56E90` stores `$74EE6/$74EE2/$74EE4` | `$506A0` |
+
+Forcing the cockpit gate `$74EE6` alone did not make the view respond to mouse
+motion, and a 1 MB cockpit dump contains **no reader of `$6D404`** (only the
+poller, stack saves at `$36892/$36938`, and scene clears). The cockpit dump has
+no `JOY1DAT` access either. So the steering consumer is **not in the first
+1 MB**: either it sits above `$100000` (fast RAM) or it reads the accumulators
+through a base register. Next probe: dump `$100000-$200000` in the cockpit and
+search for `$6D404`/`$6D408` readers, or set a breakpoint on the poller's mode-2
+handler and follow the value.
