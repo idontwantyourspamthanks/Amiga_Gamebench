@@ -84,3 +84,17 @@ while the jeep is stationary at mission start; the input poller is running and
 accumulating. Next probe (running now): breakpoint on the patched consumer
 (matched by the dump's patched skeleton, in-session) and read the registers if
 it fires, to find whether/when the control step calls it.
+
+## UAE debugger: breakpoints (2026-11-14)
+
+The console debugger (`F12+d`, `console_debugger=1`) has:
+
+- `f <addr>` add/remove a breakpoint, `fl` list, `fd` remove all;
+- `r` registers, `m`/`d` memory/disassembly, `S`/`W` save/write,
+- `w <num> <addr> <len> <R/W/I/F/C>` watchpoints, `H` PC history.
+
+Confirmed working: break at the current PC, `g` resumes, and the stop prints a
+register dump. The breakpoint probe at the patched consumer (`$5C640`) did
+**not** fire while the cockpit sat idle, and the log shows the game looping in
+`acquire_mouse`/`get_mouse_flags` — the 3D view is waiting for input before the
+vehicle control step runs. The probe is being repeated after a fire click.
