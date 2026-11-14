@@ -81,3 +81,37 @@ those sessions produced "no hits" and "0 VBL/s".
 The **frames-per-tick ratio** is warp-independent (frames and ticks both scale
 with emulated time), so the logic-rate test is valid in warp. Only absolute
 "x per wall second" figures require `warp=0` *after* the cockpit is reached.
+
+## Amiga static findings (live cockpit dump, addresses from that run)
+
+The world step and its callers:
+
+```
+5b790: tst.w  $6a398        ; paused?
+       bne.s  other
+       bsr.w  $5b7a6        ; the world tick: movem, mulu #$3e per-type block,
+                            ; bsr $5be34 -> bsr $5c640 (the X consumer)
+```
+
+Callers of `$5b790`: `$58dc8`, `$59cc6`, `$59ea8`. The first one is inside a long
+sequential `jsr` block (`$58c9c` ... ) that also contains
+`jsr $4bbe8` (the `acquire_mouse` wait - the reason an idle cockpit produces no
+ticks: the block blocks there until the user moves the mouse) and ends with
+`bra.w $58c9c` at `$58e4a`. There is **no VBL-counter comparison** guarding the
+`jsr $5b790` in that block: as written, one pass of the block = one world step,
+whatever the frame rate - the ST's frame-locked shape.
+
+Two adjacent counters look like frame-timing instrumentation, not a clock:
+`$6c53a` counts up by 1 per pass (capped at `$1f5` = 501, or down by 2 in the
+other branch) and `$6c538` is set when it reaches `$64` = 100 (`sub_05b734`).
+
+Where a port would attach, if the measurement confirms frame-locking:
+
+| piece | Amiga site |
+|---|---|
+| real-time clock | VBL handler at `$4afb0`; its `jsr $17382` (at `$4afd0`) is a free 6-byte slot for a blob call, and `$4076`/`$476c` are the counters it bumps (operands move per load phase - take them from the session dump) |
+| gate the world step | `$58dc8` (`jsr $5b790`) - replace with a blob call that runs the original step only when the accumulated clock owes a tick, and otherwise returns |
+| original rate | measure first; the ST used 5 Hz (`GRP 60` units of 1/300 s) |
+
+That is the same two-part design as `tick_vbl` + `p3cp_head`, minus the
+predict-ahead rendering (PH 2-5), which is a separate, riskier change.
