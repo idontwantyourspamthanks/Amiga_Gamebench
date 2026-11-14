@@ -76,13 +76,16 @@ operands relocate correctly. No startup-sequence changes, nothing to allocate,
 and the patch survives disk swaps because it lives in the loaded code. See
 `tools/mw2patch.py` and `games/in_progress/Midwinter-2/patches/p5_direct.s`.
 
-## P4 — Timing (settled: nothing to port)
+## P4 — Timing (measurement open)
 
-Measured 2026-11-14: the Amiga build is already locked to the 50 Hz vertical
-blank (`timing_baseline.md`: A1200 and A500 both run at emulated time 1.03x wall
-at real speed). A faster CPU gives rendering headroom, not game speed, so the
-ST scheduler patches have no Amiga counterpart. All remaining speed work is
-P6 rendering work under the identical-picture gate.
+2026-11-14: both machine models run at real time in FS-UAE (`timing_baseline.md`:
+525 presented frames / 11.46 s, emulated 1.03x wall, A500 and A1200 alike). That
+shows only that the **emulator** is real-time; it does not distinguish VBL-locked
+logic from a CPU-bound sim (both present 50 fps). The decisive number is world
+time per emulated frame, measured on A500 vs A1200 through the game's own VBL
+counters, with the emulator resumed during every wall window (the paused-dump
+artifact produced three false zeros). The ST scheduler ports only if that test
+shows CPU-bound stepping.
 
 Mirror the ST design:
 - free-running real-time counter from the level-3 VBL (50 Hz PAL; handle 60 Hz NTSC), independent of the game's counters;
