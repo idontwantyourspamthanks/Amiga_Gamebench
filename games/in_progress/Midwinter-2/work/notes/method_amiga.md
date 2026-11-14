@@ -133,3 +133,28 @@ the correct check is the re-parsed hunk/reloc map, which is sound.
 
 `bytes.find(pat, start)` returns an **absolute** offset; do not add the blob base
 again when turning it into a breakpoint address.
+
+## Fixed-rate timing: what to measure and the decision rule
+
+The ST build needed the sim decoupled from the frame rate. On the Amiga the
+question is whether the world already advances on the emulated vertical-sync
+clock (then a fast CPU only raises fps and no patch is needed) or on
+CPU-speed-dependent loops (then the ST-style tick patch is needed).
+
+Measurements, in order:
+
+1. **Logic cadence (running):** breakpoint the blob's consumer store, poke the
+   accumulator so a tick is guaranteed to run, and take `frame_stats` deltas
+   between hits. `frame_stats` `time_us` is emulated time, so the delta is the
+   real tick period. dt ≈ 0.2 s (10 emulated frames) means a 5 Hz tick tied to
+   the vertical-sync clock; dt varying with warp or machine model means the
+   loop is CPU-bound.
+2. **Machine comparison, same code path:** run the same cadence probe on
+   `A500` (Kickstart 1.3) and `A1200/1230`; identical dt => already fixed-rate.
+3. If CPU-bound: port the ST `p3cp_head`/`tick_vbl` design — drive the world
+   from a VBL counter instead of loop counts, keeping rendering as fast as the
+   CPU allows.
+
+Baseline so far: real-time (warp off) presented ~23 fps on A1200 for whatever
+state that run reached (the non-warp boots above did not reach the driving
+cockpit: the poke->store hit never fired), warp runs reach ~200+ fps.
