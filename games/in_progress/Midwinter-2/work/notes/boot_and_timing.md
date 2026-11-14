@@ -220,3 +220,24 @@ campaign/personnel disk or a control-method state), not at the wait code.
 Next options: (a) supply/confirm a campaign or personnel disk; (b) bypass the
 menu by seeding the game's mission state via the debugger and entering a 3D
 view directly, which is acceptable for a measurement harness.
+
+## Front-end menu model (static, verified addresses)
+
+- Hover hit test: `sub_013EA8` reads `$39338/$3933A` (cursor at the last button
+  edge), walks 6-byte items at `$5E(a6)`, compares against `$42414`, and writes
+  the item index to `$3749C` (-1 = no hit).
+- Button flags: sampler `$1765E` sets `$383A8` on right-button press (bit 0) and
+  `$383A6` on left-button press (bit 1), copying `$3933C/$39340` into
+  `$39338/$3933A`. `sub_017D86` consumes `$383A6|$383A8` for a click event;
+  `sub_017E7E` clears the flags and `$3934C`.
+- Hallway loop `$14AC4`: wait `$17AA2` -> hit test -> `$3749C`; index 2 has a
+  separate path, other indices call `$14050` (selection wrap/`$449FE`) then
+  `$149C2` (screen rebuild) and store the selected index in `$44992`.
+- `sub_0131CA` (index 0/RAIDS path in the `$1199A` variant) sets a flag byte in
+  `$446D8+` and redraws; it is a selection, not a mission start.
+- Live state on RAIDS with the left button held: `$383A6=$FFFF`,
+  `$3934C=$D`, `$3749C=0`, `$40E26=1`, `$382E0=0`. So the click event and hit
+  test are correct; the remaining step is the confirm that consumes the
+  selection (likely a second click/fire or a key), not another input mapping.
+- The `$382E0=0` screen is the hallway; `$11900` (sets `$382E0=5`) is a later
+  screen, not the hallway.

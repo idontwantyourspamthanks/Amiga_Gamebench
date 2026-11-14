@@ -31,17 +31,21 @@ def find_cursor(path: str | Path, labels: list[tuple[int, int, int, int]] | None
     b, g, r = cv2.split(im)
     mask = ((b > 225) & (g > 225) & (r > 225)).astype(np.uint8)
     count, _labels, stats, centroids = cv2.connectedComponentsWithStats(mask, 8)
-    best = None
+    outside, inside = [], []
     for i in range(1, count):
         x, y, w, h, area = stats[i]
         if not (8 <= area <= 160 and 4 <= w <= 24 and 6 <= h <= 26):
             continue
         cx, cy = centroids[i]
+        candidate = (int(area), float(cx), float(cy))
         if any(x0 <= cx <= x1 and y0 <= cy <= y1 for x0, y0, x1, y1 in labels):
-            continue
-        if best is None or area > best[0]:
-            best = (int(area), float(cx), float(cy))
-    return best
+            inside.append(candidate)
+        else:
+            outside.append(candidate)
+    # Prefer a component outside the labels, but do not lose the arrow when it
+    # is over a label (the common case just before a click).
+    pool = outside or inside
+    return max(pool, key=lambda c: c[0]) if pool else None
 
 
 def move_to(h, x: int, y: int, tries: int = 10, tolerance: int = 12,
