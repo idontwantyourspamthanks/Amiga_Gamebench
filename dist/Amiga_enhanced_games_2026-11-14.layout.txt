@@ -1,7 +1,9 @@
 Amiga_enhanced_games_2026-11-14.hdf  (33554432 bytes, bare FFS hardfile, md5 below)
 built by tools/make_amiga_hd.py from the current patched builds
 
-Volume (mounted by FS-UAE as DH0, bootable, DOS\1 FFS, 32 MiB)
+Volume "Games" (mounted by FS-UAE as DH0, bootable, DOS\1 FFS, 32 MiB).
+The image BOOTS TO THE WORKBENCH DESKTOP: open the Games volume and double-click
+mwII (it has a tool icon), or from a Shell: CD Games:  then  mwII.
   C Libs Devs S System Utilities Prefs Classes Expansion WBStartup Fonts T RexXC
       Workbench 3.1 (from os/WorkBench/amiga-os-310-workbench.adf)
   mwII progdir midword.fsd cods.bin grafix/ grafdir missions/ missdir
@@ -10,7 +12,7 @@ Volume (mounted by FS-UAE as DH0, bootable, DOS\1 FFS, 32 MiB)
   ORIG/mwII+data
       the unpatched executable, for comparison (copy to the root as mwII to run)
   S/User-Startup
-      CD Games: ; Games:mwII   (comment out to boot to the Workbench desktop)
+      comments only - the desktop is left to the user
   README.txt
 
 Use

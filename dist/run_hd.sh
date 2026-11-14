@@ -7,10 +7,16 @@ set -euo pipefail
 here="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd -P)"
 root="$(dirname "$here")"
 
-img_arg=""
-if [[ $# -gt 0 && "$1" != -* ]]; then img_arg="$1"; shift; fi
-img="${img_arg:-$(ls -t "$here"/Amiga_enhanced_games_*.hdf 2>/dev/null | head -1)}"
-[[ -f "$img" ]] || { echo "no hard-disk image found (build one with tools/make_amiga_hd.py)" >&2; exit 1; }
+# No argument: mount every enhanced-games image in dist/ (newest first) so all
+# the games' volumes show up on the Workbench desktop.  With an argument: mount
+# just that one image.
+imgs=()
+if [[ $# -gt 0 && "$1" != -* ]]; then
+    imgs=("$1"); shift
+else
+    while IFS= read -r f; do imgs+=("$f"); done < <(ls -t "$here"/Amiga_enhanced_games_*.hdf 2>/dev/null)
+fi
+[[ ${#imgs[@]} -gt 0 ]] || { echo "no hard-disk image found (build one with tools/make_amiga_hd.py)" >&2; exit 1; }
 
 kick=""
 for f in "$root/os/Kickstart/amiga-os-310-a1200.rom" "$root/os/Kickstart/kickstart-3.1-a1200.rom"; do
@@ -24,13 +30,15 @@ cat >"$cfg" <<EOF
 [config]
 amiga_model = A1200
 kickstart_file = $kick
-hard_drive_0 = $img
+$(for i in "${!imgs[@]}"; do echo "hard_drive_$i = ${imgs[$i]}"; done)
 fast_memory = 8
 warp_mode = 0
 automatic_input_grab = 1
 initial_input_grab = 1
 EOF
 
-echo "A1200 (Kickstart 3.1): $(basename "$img")"
-echo "The game starts automatically from S:User-Startup; comment that file out to get Workbench."
+echo "A1200 (Kickstart 3.1), hard drives:"
+for f in "${imgs[@]}"; do echo "  $(basename "$f")"; done
+echo "Boots to the Workbench desktop; open a volume and double-click a game,"
+echo "or from a Shell:  CD Games:   then   mwII"
 exec fs-uae "$cfg" "$@"

@@ -107,10 +107,15 @@ def main() -> int:
         user_startup = tree / "S/User-Startup"
         user_startup.parent.mkdir(parents=True, exist_ok=True)
         user_startup.write_text(
-            "; Midwinter II from the hard disk (comment out to boot to Workbench only)\n"
-            "CD Games:\n"
-            "Games:mwII\n"
+            "; Boots to the Workbench desktop.\n"
+            "; The games are in the root of this volume; double-click an icon to start\n"
+            "; one.  To start Midwinter II from a Shell instead:\n"
+            ";     CD Games:  then  mwII\n"
         )
+        # A generic tool icon so the game can be started from the desktop
+        icon_src = tree / "Utilities/Clock.info"
+        if icon_src.exists():
+            shutil.copyfile(icon_src, tree / "mwII.info")
         (tree / "README.txt").write_text(
             "Amiga enhanced games\n\n"
             "Midwinter II (patched: direct controls) is installed in the root of\n"
