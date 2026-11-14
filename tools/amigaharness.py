@@ -350,18 +350,38 @@ class FSUAE:
         time.sleep(0.3)
 
     # --- debugger -------------------------------------------------------
+    def debugger_chord(self) -> None:
+        """Press F12+d with a held F12, so FS-UAE enters the debugger without opening its menu."""
+        self._xdotool("keydown", "--window", self.window, "F12")
+        time.sleep(0.15)
+        self._xdotool("key", "--window", self.window, "d")
+        time.sleep(0.15)
+        self._xdotool("keyup", "--window", self.window, "F12")
+
     def debugger(self, *commands: str, wait: float = 0.6) -> str:
         """Enter the UAE console debugger (once) and run commands; return new output."""
         if not self.alive():
             raise RuntimeError("emulator not running")
         before = len(self.tail(2_000_000))
         if not self._in_debugger:
-            self.key("F12+d")
-            if not self.wait_for("Activated debugger", timeout=10):
+            # F12+d sometimes opens the FS-UAE menu instead (chord timing): close it and retry.
+            # Only text printed after the key press counts; entering prints a register dump.
+            for attempt in range(4):
+                self.debugger_chord()
+                deadline = time.time() + 4
+                seen = False
+                while time.time() < deadline and not seen:
+                    new_text = self.tail(2_000_000)[before:]
+                    seen = "Activated debugger" in new_text or "Next PC:" in new_text
+                    time.sleep(0.2)
+                if seen:
+                    break
+                self.key("Escape")
+                time.sleep(0.5)
+            else:
                 raise RuntimeError("debugger did not activate (is console_debugger=1?)")
             time.sleep(0.5)
             self._in_debugger = True
-            self._menu_open = True
             before = len(self.tail(2_000_000))
         for command in commands:
             self.proc.stdin.write((command + "\n").encode())
@@ -397,7 +417,8 @@ class FSUAE:
             return
         words = words or []
         for i in range(0, len(words), 64):
-            chunk = " ".join(f"{w:04x}" for w in words[i:i + 64])
+            # `.w` is required: without it the debugger writes values < $100 as single BYTES
+            chunk = " ".join(f"{w:04x}.w" for w in words[i:i + 64])
             self.debugger(f"W {addr + i * 2:x} {chunk}", wait=0.3)
 
     def save_mem(self, path: str | Path, addr: int, length: int) -> Path:
@@ -411,12 +432,37 @@ class FSUAE:
     def breakpoint(self, addr: int) -> None:
         self.debugger(f"f {addr:x}", wait=0.2)
 
+    def breakpoints(self) -> list[int]:
+        out = self.debugger("fl", wait=0.3)
+        return [int(x, 16) for x in re.findall(r"\b([0-9A-Fa-f]{5,8})\b", out)]
+
     def clear_breakpoints(self) -> None:
-        self.debugger("fd", wait=0.2)
+        """Remove every breakpoint. (`fd` only removes one in this UAE build: toggle each with `f`.)"""
+        for addr in self.breakpoints():
+            self.debugger(f"f {addr:x}", wait=0.2)
+
+    def run_until_stop(self, timeout: float = 10.0) -> str | None:
+        """Resume and wait for a breakpoint/watchpoint to stop the CPU.
+
+        Returns the debugger output (register dump) when it stopped, None on timeout (still
+        running). After a stop the debugger is active, so memory/register commands work at once.
+        """
+        mark = len(self.tail(2_000_000))
+        self.resume()
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            new = self.tail(2_000_000)[mark:]
+            if "Next PC:" in new:
+                self._in_debugger = True
+                self._menu_open = False      # the emulator stopped by itself: no F12 menu open
+                time.sleep(0.3)
+                return self.tail(2_000_000)[mark:]
+            time.sleep(0.1)
+        return None
 
     def run(self) -> None:
-        self.debugger("g", wait=0.1)
-        self._in_debugger = False
+        """Resume emulation. Same as resume(): also closes the F12 menu the debugger chord opened."""
+        self.resume()
 
     def frame_stats(self) -> dict:
         """Cumulative frame counter/time from the debugger's `c` command."""
@@ -550,14 +596,13 @@ class FSUAE:
         self._menu_open = False
 
     def resume(self) -> None:
+        """Leave the debugger (`g`). The chord used to enter it does not open the FS-UAE menu."""
         if self._in_debugger:
             self.proc.stdin.write(b"g\n")
             self.proc.stdin.flush()
             self._in_debugger = False
-            time.sleep(0.2)
-            if self._menu_open:
-                self._xdotool("key", "--window", self.window, "F12")
-                self._menu_open = False
+            time.sleep(0.3)
+            self._menu_open = False
 
     # --- shutdown -------------------------------------------------------
     def close(self) -> None:

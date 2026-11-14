@@ -152,3 +152,12 @@ no `JOY1DAT` access either. So the steering consumer is **not in the first
 through a base register. Next probe: dump `$100000-$200000` in the cockpit and
 search for `$6D404`/`$6D408` readers, or set a breakpoint on the poller's mode-2
 handler and follow the value.
+
+
+## 9. Superseded (2026-11-14)
+
+§6 and §8 conclusions ("in-game input is not the mouse poller", "no reader of the accumulator in the
+first 1 MB") were artefacts of stale debugger breakpoints. The cockpit starts in mouse mode (gate
+word 1); the poller (per VBL) adds into the X/Y accumulators, the player sim's consumer reads X.
+J/K use the same accumulator through ramps. See `direct_controls_howto.md` for the verified chain
+and the direct-controls patch.

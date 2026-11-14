@@ -67,3 +67,33 @@ def boot_to_easy(disks=None, images=None):
     boot(h)
     hold_click(h, *RAIDS)
     return h
+
+
+D1_DIRECT = os.path.join(os.path.dirname(__file__), '..', 'work', 'build', 'd1_direct.adf')
+BRIEFING_QUESTION = (75, 420)
+THUMBS_UP = (600, 45)
+
+
+def boot_to_cockpit(d1=None, extra=None, warp=True):
+    """Boot the three-drive set and play the front end through to the 3D cockpit.
+
+    Verified recipe (2026-11-14, A1200, Kickstart 3.1): boot d1, ~30 s, grab the mouse,
+    space (past the "press fire"), RAIDS, INTERMEDIATE, space on the raid map (jumps to the
+    CAMARGO briefing), "?" icon, thumbs-up -> cockpit. Every press is HELD ~1 s.
+    Returns the FSUAE instance (emulation running, no debugger entered yet).
+    """
+    d1 = d1 or D1
+    h = FSUAE(machine='A1200', disks=[d1, D2, D3], images=[d1, D2, D3], warp=warp,
+              extra=extra)
+    h.wait(30)
+    h.grab_mouse()
+    h.key('space')
+    h.mouse_rel(1, 0)
+    h.wait(0.3)
+    hold_click(h, *RAIDS)
+    hold_click(h, *LEVELS['intermediate'])
+    h.key('space')
+    h.wait(12)
+    hold_click(h, *BRIEFING_QUESTION)
+    hold_click(h, *THUMBS_UP, hold=1.0, settle=8.0)
+    return h

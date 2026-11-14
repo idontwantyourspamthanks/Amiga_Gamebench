@@ -98,3 +98,18 @@ register dump. The breakpoint probe at the patched consumer (`$5C640`) did
 **not** fire while the cockpit sat idle, and the log shows the game looping in
 `acquire_mouse`/`get_mouse_flags` — the 3D view is waiting for input before the
 vehicle control step runs. The probe is being repeated after a fire click.
+
+
+## Correction and result (2026-11-14, direct controls)
+
+The "clamp probe shows the consumer is dormant" and "breakpoint never fired" sections above are
+**wrong**. The cause was the debugger, not the game: `fd` removes only one breakpoint, so earlier
+probes left breakpoints set and every `g` stopped the CPU again at once; and `W <addr> 0000`
+writes a single byte. With breakpoints cleared and `.w` writes, the cockpit's player sim
+(`0x5b790` -> `0x5b7a6` -> `0x5be34` -> consumer `0x5c640` in that run) runs every logic tick in the
+default mouse mode; the clamp poke (`0x7fff` -> `0x1f4`) proved it.
+
+The in-place 50-byte replacement was dropped: it has only three absolute operands and no room for
+the device gate and the J/K counters. The shipped patch appends a blob to CODE hunk 0 and jumps to it
+from two sites (poller mode-2 accumulate, X consumer). Full method, evidence and troubleshooting:
+`direct_controls_howto.md`.
