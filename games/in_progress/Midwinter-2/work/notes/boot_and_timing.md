@@ -259,3 +259,15 @@ view directly, which is acceptable for a measurement harness.
   `$12B0C`, `$12C1E`, `$135B4`, `$13672`. Trace those consumers and the
   screen dispatcher; the hallway's transition gate is among them.
   `$4495C`/`$44960` are per-screen flags set/cleared in `$149C2`.
+
+## Traced click (verified cursor, 2026-11-14)
+
+- Cursor verified at (281,139) (arrow tip on RAIDS), breakpoint set at the
+  hallway activation branch `$14AE2` (runtime `$3BBB2`), one click sent.
+- **The breakpoint never fired.** After the click the CPU was still in the
+  `$17AA2` wait (`PC $3EBAA`). So the active hallway loop is not the `$14AC4`
+  path (or the click is consumed/cleared before that wait sees it).
+- Next diagnostic: read the return address of the `$17AA2` call at the wait
+  (`A7=$614B0`; caller return is in the stack frame) or set a breakpoint on
+  `$17AA2` entry and walk back to its caller. That identifies the real active
+  screen loop without any further guessing.
