@@ -271,3 +271,25 @@ view directly, which is acceptable for a measurement harness.
   (`A7=$614B0`; caller return is in the stack frame) or set a breakpoint on
   `$17AA2` entry and walk back to its caller. That identifies the real active
   screen loop without any further guessing.
+
+## REAL hallway loop and the agent gate (2026-11-14)
+
+The loop is at flat `$1F226` / runtime `$462F6` (found via the `$17AA2` caller):
+
+```
+1f220: jsr $17ED4          ; restore input mode
+1f226: jsr $17AA2          ; wait for a click event
+1f22c: jsr $181E0          ; hit test (uses $3933C/$39340, current cursor)
+1f232: tst.w $3749C
+1f238: bmi $1F226          ; no hit -> wait again
+1f23a: bra $1F19C          ; hit -> activation path
+1f19c: tst.w $40AA6
+1f1a2: bmi $1F21A          ; NEGATIVE gate -> skip mission setup, wait
+1f1a4..1f212               ; mission setup (calls $17EDC, $1A8FA, $25B5E, ...)
+```
+
+- Live at hover: `$3749C=0` (RAIDS), `$3933C/$39340 = $76/$38` (game coords;
+  screen ≈ ×2.4), `$39338/$3933A` stale at 0 (not used by `$181E0`).
+- `$40AA6` runtime `$67B7E` was **0** in our session, so the gate is open; a
+  click with a hit should run the mission setup. The remaining variable is
+  whether that setup needs a particular disk in df0.
