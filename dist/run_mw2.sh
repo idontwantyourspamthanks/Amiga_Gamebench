@@ -12,7 +12,10 @@ here=$(cd "$(dirname "$0")" && pwd)
 root=$(cd "$here/.." && pwd)
 orig="$root/games/in_progress/Midwinter-2/originals"
 
-d1="$root/games/in_progress/Midwinter-2/work/build/d1_skipintro.adf"
+build="$root/games/in_progress/Midwinter-2/work/build"
+# prefer the direct-controls build, then the skip-intro test build
+d1="$build/d1_direct.adf"
+[ -f "$d1" ] || d1="$build/d1_skipintro.adf"
 if [ ! -f "$d1" ]; then
     d1=$(ls "$orig"/*"Disk 1 of 3)[cr SPL].adf")
     echo "skip-intro build missing; using the original start-up disk" >&2
@@ -49,6 +52,7 @@ initial_input_grab = 1
 EOF
 
 echo "Midwinter II on A1200; disks df0=startup, df1=graphics, df2=missions"
+echo "df0 = $(basename "$d1")  (rebuild the patched one with: python3 tools/mw2patch.py apply-adf ...)"
 echo "Front end: hold the left mouse button ~1 s on RAIDS, then a difficulty,"
 echo "then hover an island and press SPACE; '?' then thumbs-up starts the mission."
 exec fs-uae "$cfg" "$@"
