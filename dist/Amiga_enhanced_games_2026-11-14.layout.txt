@@ -14,7 +14,7 @@ Volume (mounted by FS-UAE as DH0, bootable, DOS\1 FFS, 32 MiB)
   README.txt
 
 Use
-  FS-UAE:      dist/run_amiga.sh
+  FS-UAE:      dist/run_hd.sh
   real Amiga:  write the image to an SD/CF card or a .hdf-aware device, or mount
                the volume contents on any partition (files must sit in the root)
   Gotek-style floppy emulators cannot hold a hard disk image

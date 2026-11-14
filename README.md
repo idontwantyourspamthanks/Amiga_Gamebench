@@ -84,7 +84,7 @@ because they contain game data:
 | `dist/Midwinter2-Amiga-hd-<date>.zip` | `python3 tools/make_amiga_zip.py` | the patched game plus an AmigaDOS `MW2Install` script; unpack into the root of any hard-disk partition |
 | `dist/Amiga_enhanced_games_<date>.hdf` | `python3 tools/make_amiga_hd.py` | a 32 MB bootable FFS hardfile: Workbench 3.1 + the patched game at the volume root + `S/User-Startup` that starts it |
 
-`dist/run_amiga.sh` boots the newest image in FS-UAE (A1200, Kickstart 3.1). The
+`dist/run_hd.sh` boots the newest image in FS-UAE (A1200, Kickstart 3.1). The
 build script also writes the unpatched executable to `ORIG/` for comparison.
 
 **The game must live in the root of its volume** - that is what its own `DH0`
