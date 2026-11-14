@@ -479,3 +479,28 @@ Two traps seen while measuring:
   (`frame_stats` returned 0 frames). Use the default `video_sync=0` and
   `warp=0` for real-time measurements; warp multiplies emulated time and must
   never be used for rate numbers.
+
+---------------------------------------------------------------------------------------------------
+
+## 9. Decay test (the one that actually proves "no yoke")
+
+Cadence probes mislead here: with the accumulator at 0 the store breakpoint does **not** fire, so
+"hits per poke" measures the poke round-trip (~1.3 s), not a world tick. What matters is what
+happens after motion stops. `heading = acc - 0xFF0` (word; 1024 = 360 degrees), everything else
+from `locate`:
+
+```python
+a = pr.locate(h); acc, out = a['acc'], a['out']; head = acc - 0xFF0
+pr.regrab(h); pr.mouse_burst(h, 400)
+for i in range(8):
+    h.resume(); time.sleep(1.0)                 # the emulator must be RUNNING in the window
+    print(f"t={i+1}s head={pr.word(h,head)} out={pr.word(h,out)}")
+```
+
+Observed (patched, warp, M mode): the heading froze at 584 and `out` read 0 at every one of the
+eight samples. That is the acceptance criterion: after motion, `out` must be 0 and the heading must
+stop changing within one tick.
+
+Note the store path is **input-gated** (`acc == 0` -> the rate handler keeps `out` at its previous
+value). A persistent nonzero `out` after motion would show up here as a drifting heading, so this
+test also validates the zeroing on its own.
