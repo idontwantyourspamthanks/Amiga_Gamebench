@@ -20,7 +20,7 @@ Nothing in this repository is a game file. The patch tools verify every original
 | Bench (layout, ADF/hunk tools, disassembler, FS-UAE harness, skills) | built |
 | Kickstart ROMs | 1.3, 2.05, 3.1 (A1200 and A600) present in `os/Kickstart/`; A1200 3.1 boots the game |
 | Disk versions | chosen and documented in `games/in_progress/Midwinter-2/README.md` |
-| Midwinter II port | **boots and plays on A1200 3.1**: three drives, held-press menu, in-game cockpit (`work/shots/mw2_ingame_a1200.png`); play launcher `dist/run_mw2.sh`; in-game input is joystick/keyboard; **direct controls done**: mouse turns in proportion to motion and stops, joystick/keys turn at a constant rate while held (`patches/p5_direct.s`, `tools/mw2patch.py`, built into `work/build/d1_direct.adf`, measured live; method in `games/in_progress/Midwinter-2/work/notes/direct_controls_howto.md`) |
+| Midwinter II port | **boots and plays on A1200 3.1**: three drives, held-press menu, in-game cockpit (`work/shots/mw2_ingame_a1200.png`); play launcher `dist/run_mw2.sh`; in-game input is joystick/keyboard; **direct controls done**: mouse turns in proportion to motion and stops, joystick/keys turn at a constant rate while held (`patches/p5_direct.s`, `tools/mw2patch.py`, built into `work/build/d1_direct.adf`, measured live; method in `games/in_progress/Midwinter-2/work/notes/direct_controls_howto.md`). Open: whether the world clock is VBL-locked or CPU-bound — emulator real-time parity is measured, the game-counter A1200-vs-A500 test is not yet valid (`work/notes/timing_baseline.md`) |
 | Midwinter (1) | disks collected; not started |
 
 ## Machines and targets
