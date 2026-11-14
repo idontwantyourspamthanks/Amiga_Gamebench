@@ -113,3 +113,23 @@ The in-place 50-byte replacement was dropped: it has only three absolute operand
 the device gate and the J/K counters. The shipped patch appends a blob to CODE hunk 0 and jumps to it
 from two sites (poller mode-2 accumulate, X consumer). Full method, evidence and troubleshooting:
 `direct_controls_howto.md`.
+
+## Hunk-growth check resolved (2026-11-14)
+
+Appending the blob grows CODE hunk 0 from `$35338` to `$353FC`. Two literals equal
+to the old end were found in the patched file:
+
+- file `0x17786` is the operand of the **new `jmp` at the poller handler site**
+  (`4ef9 00035338`); the patched RELOC32 table has an entry at in-hunk `0x1775A`
+  **targeting hunk 0**, so at load time it becomes hunk0base+`$35338` = the blob.
+  Same for the consumer site (in-hunk `0x2858A`).
+- file `0x43E2C` is inside the RELOC32 **table region** (`$2F236, $2F242, $2F26A,
+  $3533A, …`), i.e. reloc offsets inside the grown hunk, not code pointers.
+
+A plain byte diff is dominated by the table/hunk shift after the insertion point;
+the correct check is the re-parsed hunk/reloc map, which is sound.
+
+## Probe gotcha
+
+`bytes.find(pat, start)` returns an **absolute** offset; do not add the blob base
+again when turning it into a breakpoint address.
