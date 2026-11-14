@@ -44,12 +44,18 @@ games/**/dist/
 /dist/*
 !/dist/*.sh
 !/dist/*.md
+!/dist/*.layout.txt
 
 # --- Local / generated ------------------------------------------------------
 __pycache__/
 *.pyc
 .venv/
 **/*.img
+
+# Hard-disk images and install archives (contain game data)
+*.hdf
+*.hdz
+*.zip
 **/*.gz
 **/*.hlog
 **/local_*

@@ -1,0 +1,21 @@
+Amiga_enhanced_games_2026-11-14.hdf  (33554432 bytes, bare FFS hardfile, md5 below)
+built by tools/make_amiga_hd.py from the current patched builds
+
+Volume (mounted by FS-UAE as DH0, bootable, DOS\1 FFS, 32 MiB)
+  C Libs Devs S System Utilities Prefs Classes Expansion WBStartup Fonts T RexXC
+      Workbench 3.1 (from os/WorkBench/amiga-os-310-workbench.adf)
+  mwII progdir midword.fsd cods.bin grafix/ grafdir missions/ missdir
+      Midwinter II, PATCHED (direct controls). The game only runs from the
+      volume root - this is exactly what its own DH0 installer produces.
+  ORIG/mwII+data
+      the unpatched executable, for comparison (copy to the root as mwII to run)
+  S/User-Startup
+      CD Games: ; Games:mwII   (comment out to boot to the Workbench desktop)
+  README.txt
+
+Use
+  FS-UAE:      dist/run_amiga.sh
+  real Amiga:  write the image to an SD/CF card or a .hdf-aware device, or mount
+               the volume contents on any partition (files must sit in the root)
+  Gotek-style floppy emulators cannot hold a hard disk image
+e94fae2234f92f4e52e429e157ccdada  dist/Amiga_enhanced_games_2026-11-14.hdf
