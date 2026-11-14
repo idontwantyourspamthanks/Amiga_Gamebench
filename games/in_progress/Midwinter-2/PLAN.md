@@ -17,7 +17,16 @@ The Amiga program is a different build of the same game: do not copy addresses, 
 - Skills: `amiga-game-speedup`, `amiga-fs-uae-harness`, `amiga-adf-and-hunks`, `game-delegation`.
 - Disk choice and MD5 sums: `README.md`.
 
-## P1 — Baseline and boot path
+## P1 — Baseline and boot path (done on A1200)
+
+Status 2026-11-14: the game boots and plays on an emulated A1200 with
+Kickstart 3.1. Use `FSUAE(machine='A1200', disks=[d1, d2, d3])`: df0 starts
+the game, df1/df2 satisfy every "insert graphics/missions disk into any
+drive" prompt with no swapping. The front end needs **held** ~1 s mouse
+presses. Path: RAIDS (281,140) -> difficulty (295,385) -> raid map -> hover
+an island + SPACE -> CAMARGO briefing -> "?" (75,420) -> commander room ->
+thumbs-up (600,45) -> 3D cockpit. Screenshots in `work/shots/`.
+
 
 Deliverable: `games/in_progress/Midwinter-2/tools/mw2harness.py`, a `FSUAE` subclass with:
 - `boot_to_title()` and `boot_to_game()` using game-state checks (RAM words), not only screenshots;
