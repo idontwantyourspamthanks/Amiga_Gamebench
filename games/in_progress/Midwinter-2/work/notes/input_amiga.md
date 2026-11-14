@@ -113,3 +113,21 @@ The direct-controls work must therefore be aimed at the in-game joystick/key
 path, not at `$55E48` (which is the menu/mouse-axis consumer). Finding that
 consumer and its clamp/rate fields is the next task; the same 1 MB live dump
 technique (scan for the fixed hardware operands) applies.
+
+## 7. In-game device selector: M / J / K (2026-11-14)
+
+`sub_0506A0` waits for a key and sets three gates:
+
+| key | d1 `$6E6EE` (mouse) | d2 `$6E6EA` (joystick) | d3 `$6E6EC` (keyboard) |
+|---|---|---|---|
+| `M` | 0xFFFF | 0 | 0 |
+| `J` | 0 | 0xFFFF | 0 |
+| `K` | 0 | 0 | 0xFFFF |
+
+Until one is pressed, **all three poll gates are zero and the game ignores all
+input** — this is why the cockpit seemed unresponsive in earlier tests.
+
+Pollers:
+- mouse `$44F1E` (gate `$6E6EE`), accumulators `$66C0C/$66C10`, consumer `$55E48` -> `$65DD2/$65DD4`;
+- joystick `$45070` (gate `$6E6EA`), ramps `$67208..$6721C`;
+- keyboard `$4516A` (gate `$6E6EC`), same ramp scheme, key-held flags at `$672E6+$33..$6F`, ramp rates `$67218/$6721C/$67220/$67224`.
