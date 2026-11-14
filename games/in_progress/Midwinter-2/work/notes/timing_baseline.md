@@ -49,3 +49,37 @@ about real hardware, where the vertical blank stays at 50 Hz.
 Baseline rendering in the cockpit: ~25 fps presented while driving (the
 `h.fps()` figure of ~23 used the unreliable warp `time_us`; treat 45.8 fps as
 the real-time figure outside the cockpit, ~25 inside).
+
+## Void results, and the protocol that actually validates state
+
+Three earlier "0.0 VBL/s" readings were **not** measurements of the game:
+
+| probe | what was wrong |
+|---|---|
+| hallway/title, `warp=0` | the screen was the intro/garbage; `MWII`'s VBL handler was not installed, so `$4076` cannot move |
+| dump-then-sleep without `resume()` | `pr.dump` and every `read` **pause** the emulator; the whole window was frozen |
+| `video_sync=1` single run | the emulator stopped producing frames at all (`frames=0`); do not use it for rates |
+
+The live VBL handler was identified from a RAM dump at `0x4AFB0`:
+
+```
+btst.b #5,$dff01f        ; VERTB
+beq exit
+movem.l ...
+jsr $17f34 / bsr $4b2f6 / jsr $16f60 / jsr $17382
+addq.w #1,$4076          ; frame/VBL counter
+addq.w #1,$476c          ; second counter
+clr.w  $4766
+```
+
+Valid protocol for the world-rate number:
+
+1. `cockpit(machine)` — the **full** front-end recipe (`direct_controls_howto.md` §1), not a
+   bare boot+wait, so the handler is installed; screenshot to confirm the state.
+2. `pr.dump`, then `h.resume()` — the game must be running before any wall window.
+3. `c0=read(counter)` (pauses) -> `h.resume()` -> `time.sleep(w)` -> `c1=read(counter)`.
+   The window between the two reads is exactly `w` of running emulation, because the
+   reads themselves are paused instants.
+4. Report `dC/w` for A1200 and A500 with `warp=False`. If the rates agree, the logic
+   clock is VBL-locked and machine-independent; if the A1200 is faster, the ST
+   scheduler port is required.
