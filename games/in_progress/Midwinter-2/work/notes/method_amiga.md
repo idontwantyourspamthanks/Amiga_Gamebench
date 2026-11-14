@@ -48,3 +48,24 @@
   3. build `tools/mw2patch.py` for the hunk file (site verify + write, no hunk
      size changes) and produce a patched d1;
   4. boot the patched disk and re-run the signature/behaviour check.
+
+## First real patch: mouse consume-and-clear (2026-11-14)
+
+- The consumer exists **once** in `MWII`, at file offset `$285B4` (found by the
+  skeleton `b06800146e0630280014600ab06800166d0430280016`; it is preceded by
+  `rts`). Pre-relocation linked operands in the file: accumulator `$400C`,
+  output `$31D2`; the deadzone helper is at consumer+`$66`.
+- `tools/mw2patch.py` verifies the 50 original bytes, builds the replacement
+  from the **file's** operands, and writes it back at the same offset:
+  ```
+  move.w <acc>,d0 / cmp.w $14(a0),d0 / bgt +4 / move.w $14(a0),d0
+  cmp.w $16(a0),d0 / blt +4 / move.w $16(a0),d0 / nop
+  clr.l <acc> / move.w $12(a0),d1 / bsr deadzone / move.w d0,<out> / rts
+  ```
+  The new absolute operands sit at exactly the original operands' file offsets,
+  so the hunk's existing RELOC32 entries relocate them at load time; no payload
+  or trampoline is needed.
+- `mw2patch.py apply-adf` builds `work/build/d1_direct.adf` (delete + write via
+  xdftool; the written MWII round-trips byte-identically).
+- Boot/phased verification is running; the patched skeleton with `bgt +4`
+  (`b06800146e0430280014b0680016`) identifies the patched code in RAM.
