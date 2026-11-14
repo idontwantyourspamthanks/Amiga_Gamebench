@@ -40,8 +40,10 @@ endcli >nil:
   instruction at code offset `$102` (`move.l $dff004,d0`) with
   `bra.w $16e` + `nop` (`60 00 00 6A 4E 71`), so its prologue still saves the
   OS state and its exit path still restores it, but the demo is skipped.
-  Boot result is still being evaluated; do not ship it until mwII is seen
-  running with it.
+  Verified 2026-11-14: this disk boots to the hallway and reaches the in-game
+  cockpit on A1200 Kickstart 3.1 (every front-end test in the 2026-11-14
+  session used it). The launcher and harness fall back to the original start-up
+  disk if the build file is absent.
 
 ## Executable (SPL `MWII`)
 

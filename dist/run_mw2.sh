@@ -13,6 +13,11 @@ root=$(cd "$here/.." && pwd)
 orig="$root/games/in_progress/Midwinter-2/originals"
 
 d1="$root/games/in_progress/Midwinter-2/work/build/d1_skipintro.adf"
+if [ ! -f "$d1" ]; then
+    d1=$(ls "$orig"/*"Disk 1 of 3)[cr SPL].adf")
+    echo "skip-intro build missing; using the original start-up disk" >&2
+    echo "(hold the left mouse button ~1 s to leave the intro)" >&2
+fi
 d2=$(ls "$orig"/*"Disk 2 of 3)(Graphics)[cr SPL].adf")
 d3=$(ls "$orig"/*"Disk 3 of 3)(Missions)[cr SPL].adf")
 

@@ -16,6 +16,9 @@ from amiganav import move_to
 
 ORIGINALS = os.path.join(os.path.dirname(__file__), '..', 'originals')
 D1 = os.path.join(os.path.dirname(__file__), '..', 'work', 'build', 'd1_skipintro.adf')
+if not os.path.exists(D1):
+    # Original start-up disk; the intro needs a ~1 s held left button.
+    D1 = os.path.join(ORIGINALS, 'Midwinter II - Flames of Freedom v1.7.9.1991 (1991-09-07)(Rainbird)(Disk 1 of 3)[cr SPL].adf')
 D2 = os.path.join(ORIGINALS, 'Midwinter II - Flames of Freedom v1.7.9.1991 (1991-09-07)(Rainbird)(Disk 2 of 3)(Graphics)[cr SPL].adf')
 D3 = os.path.join(ORIGINALS, 'Midwinter II - Flames of Freedom v1.7.9.1991 (1991-09-07)(Rainbird)(Disk 3 of 3)(Missions)[cr SPL].adf')
 
