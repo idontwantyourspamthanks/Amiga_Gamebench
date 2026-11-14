@@ -293,3 +293,18 @@ The loop is at flat `$1F226` / runtime `$462F6` (found via the `$17AA2` caller):
 - `$40AA6` runtime `$67B7E` was **0** in our session, so the gate is open; a
   click with a hit should run the mission setup. The remaining variable is
   whether that setup needs a particular disk in df0.
+
+## Breakthrough: the front end runs on A1200 (2026-11-14)
+
+The menu is driven by **held** mouse presses, not clicks. With a 1 s hold:
+
+1. boot d1 (A1200) -> "insert graphics disk" -> swap df0 to d2 -> hallway.
+2. Hold-press **RAIDS** (281,140) -> **"SELECT LEVEL OF PLAY"**.
+3. Hold-press **INTERMEDIATE** (295,385) -> **the raid map** (AGORA, DHAFRA,
+   LOBOS, SAMARGO, AFRICA, skulls).
+4. Hover an island + press **space** -> **"Insert Missions Disk Into any
+   drive"** -> swap in d3 (missions).
+
+A quick click is missed by the front end's VBL sampler (`$17B1E`); a 1 s press
+always registers. All of this is now scripted in
+`games/in_progress/Midwinter-2/tools/mw2harness.py`.
