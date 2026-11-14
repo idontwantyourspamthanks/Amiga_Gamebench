@@ -54,3 +54,19 @@ the level-3 VBL handler (the handler at live `0x4AFB0` already bumps `$4076` /
 `$476C`, and its `jsr $17382` is a free slot to route through a blob), plus a
 gate on the frame loop's sim call so the world steps at the original rate while
 rendering keeps running.
+
+## First probes on the Amiga (2026-11-14)
+
+- An idle cockpit at `warp=0` produced **no consumer hits in 3 s**: the world step
+  in that state is input-gated (the game sits in the `acquire_mouse` loop). Feed
+  input while counting.
+- A poke breaks that gate (that is why poke-based probes hit the store), but the
+  poke round-trip time (~1.3 s) is not a tick period - do not read cadence from it.
+- Counting method that matches the ST question: breakpoint the consumer entry,
+  feed small mouse movements from a background thread, and record the
+  `frame_stats` frame number at every hit. `frames/hit` is the metric:
+
+  | frames/hit | meaning |
+  |---:|---|
+  | ~1 | sim runs once per presented frame -> frame-locked, ST fix needed |
+  | > 1 and machine-independent | sim runs on its own clock -> nothing to port |
