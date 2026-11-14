@@ -504,3 +504,10 @@ stop changing within one tick.
 Note the store path is **input-gated** (`acc == 0` -> the rate handler keeps `out` at its previous
 value). A persistent nonzero `out` after motion would show up here as a drifting heading, so this
 test also validates the zeroing on its own.
+
+## 10. `f` is a toggle
+
+`f <addr>` **adds or removes** a breakpoint. Issuing it twice for the same address leaves none, so a
+"no hit" probe can be self-inflicted. Right after `h.breakpoint(addr)`, print `h.breakpoints()` and
+check the address is really there before concluding anything from a missing hit. `h.clear_breakpoints()`
+toggles every listed address off for the same reason (do not use `fd`, which removes only one).
