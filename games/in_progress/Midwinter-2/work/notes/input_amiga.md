@@ -100,3 +100,16 @@ Live addresses found this way in the SPL build (menu session, 1 MB dump):
 The consumer at `$55E48` is byte-for-byte the routine described in §2 with the
 live operands. A patch must therefore be built from **live** addresses, or
 located at load time by scanning for the poller pattern.
+
+## 6. In-game input is not the mouse poller (2026-11-14)
+
+Live reads in the cockpit (A1200, SPL build): `$66C60` (mode) = 4,
+`$6E6EE` (mouse-poll gate) = **0**, `$66C0C` = unchanged when the mouse moves.
+The mouse poller (`$44F1E`) early-returns on the zero gate, so in-game steering
+is **joystick (port 1, poller `$45070`, gate `$6E6EA`) and/or the keyboard**,
+with the mouse reserved for menus.
+
+The direct-controls work must therefore be aimed at the in-game joystick/key
+path, not at `$55E48` (which is the menu/mouse-axis consumer). Finding that
+consumer and its clamp/rate fields is the next task; the same 1 MB live dump
+technique (scan for the fixed hardware operands) applies.
