@@ -20,7 +20,7 @@ Nothing in this repository is a game file. The patch tools verify every original
 | Bench (layout, ADF/hunk tools, disassembler, FS-UAE harness, skills) | built |
 | Kickstart ROMs | 1.3, 2.05, 3.1 (A1200 and A600) present in `os/Kickstart/`; A1200 3.1 boots the game |
 | Disk versions | chosen and documented in `games/in_progress/Midwinter-2/README.md` |
-| Midwinter II port | **boots and plays on A1200 3.1**: three drives, held-press menu, in-game cockpit (`work/shots/mw2_ingame_a1200.png`); next: direct controls and speed patches |
+| Midwinter II port | **boots and plays on A1200 3.1**: three drives, held-press menu, in-game cockpit (`work/shots/mw2_ingame_a1200.png`); play launcher `dist/run_mw2.sh`; in-game input is joystick/keyboard (mouse poller gated off), direct-control patches next |
 | Midwinter (1) | disks collected; not started |
 
 ## Machines and targets
