@@ -83,3 +83,20 @@ Valid protocol for the world-rate number:
 4. Report `dC/w` for A1200 and A500 with `warp=False`. If the rates agree, the logic
    clock is VBL-locked and machine-independent; if the A1200 is faster, the ST
    scheduler port is required.
+
+## Cockpit run (2026-11-14, warp=0): what the numbers really were
+
+- VBL handler found at live `0x4AFD0` in the cockpit dump - correct site, but its
+  operands in this load phase are `$6D46E`/`$6DB64`, not `$4076`/`$476C`. Always
+  take the operands from the same session's dump.
+- **Read the counter as a WORD.** `addq.w #1,<addr>` increments two bytes; a
+  `long` read also swallows the neighbouring variable. The first cockpit reading
+  (`delta 0x550000 in 7.62 s`) was exactly that mistake: the high half moved 85,
+  the low half did not.
+- Presented frames in the cockpit at real speed: **325 frames / 7.92 s emulated =
+  41 fps**. That is the honest cockpit baseline (the earlier 23 fps numbers came
+  from unverified states and warp-based `time_us`).
+- The A500 arm never reached the game in that run: at sample time it was still on
+  the cracktro/loading screen (screenshot `ck_A500.png`), so no comparison exists
+  yet. The A500 boot needs more time (KS 1.3 + 1 MB + slower CPU) or the
+  skip-intro timing adjusted.
