@@ -1,0 +1,27 @@
+Amiga_enhanced_games_2026-11-15.hdf  (28385280 bytes, RDB disk, md5 b5d36046f3d1bb5e5b53e89d354f5ba5)
+built 2026-11-15 by tools/make_amiga_hd.py from the current patched builds
+
+Partition table (RDB, geometry 16 heads x 63 sectors, all DOS\1 = FFS)
+  dev  volume           size    boot  files
+  DH0  Workbench         11 MiB  yes   185 files, 733 KiB
+  DH1  Midwinter2         7 MiB  -     186 files, 1539 KiB
+  DH2  Midwinter2Orig     6 MiB  -     186 files, 1539 KiB
+
+Boots to the Workbench 3.1 desktop (DH0). Each game is its own volume: open it and
+double-click Play (a script run by C:IconX), or from a Shell:  CD Midwinter2:  then  mwII
+The game only runs from the ROOT of its volume (its own DH0 installer's layout) and
+needs a CLI process, hence the Play script rather than a bare tool icon.
+MaxTransfer is 0x1FE00 on every partition: with a larger value the A1200's IDE path
+returns wrong data for reads over 128 KiB and mwII crashes at start.
+
+Use
+  Copperline:  dist/run_hd.sh  (see README)
+  real Amiga:  dd if=<this file> of=/dev/sdX bs=1M conv=fsync  (CF/SD/IDE adapter; check the device)
+               or copy the install zip's files to the root of an existing partition
+  Needs Kickstart 3.1 (FFS and Workbench 3.1 are 2.0+ only); tested A1200 + KS 3.1
+
+Rebuild
+  python3 tools/mw2patch.py apply <MWII from disk 1> games/in_progress/Midwinter-2/work/build/MWII_direct
+  python3 tools/make_amiga_hd.py
+  python3 tools/make_amiga_zip.py            (the install zip)
+  python3 tools/test_hd.py                   (boot + desktop click-through check)

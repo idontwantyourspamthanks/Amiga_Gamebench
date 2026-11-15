@@ -69,3 +69,58 @@ def move_to(h, x: int, y: int, tries: int = 10, tolerance: int = 12,
         h.mouse_rel(int(max(-step, min(step, dx))), int(max(-step, min(step, dy))))
         time.sleep(wait)
     return last
+
+
+def find_wb_pointer(path: str | Path):
+    """Return (x, y) of the Workbench 3.1 pointer's hot spot (top-left of the red arrow), or None.
+
+    The Workbench pointer is red/orange with a dark outline; the hot spot is the tip, which is
+    the top-left corner of its bounding box.
+    """
+    im = cv2.imread(str(path))
+    b, g, r = cv2.split(im)
+    mask = ((r > 170) & (g < 110) & (b < 110)).astype(np.uint8)
+    count, _labels, stats, _centroids = cv2.connectedComponentsWithStats(mask, 8)
+    best = None
+    for i in range(1, count):
+        x, y, w, h, area = stats[i]
+        if 20 <= area <= 400 and 6 <= w <= 30 and 8 <= h <= 34:
+            if best is None or area > best[0]:
+                best = (int(area), int(x), int(y))
+    return (best[1], best[2]) if best else None
+
+
+def wb_move_to(h, x: int, y: int, tries: int = 14, tolerance: int = 6,
+               step: int = 80, wait: float = 0.35) -> tuple[int, int] | None:
+    """Move the Workbench pointer's hot spot to (x, y) (720x568 screenshot coordinates)."""
+    last = None
+    for _ in range(tries):
+        pos = find_wb_pointer(h.screenshot(h.scratch / "nav.png"))
+        if pos is None:
+            return last
+        last = pos
+        dx, dy = x - pos[0], y - pos[1]
+        if abs(dx) <= tolerance and abs(dy) <= tolerance:
+            return last
+        h.mouse_rel(int(max(-step, min(step, dx))), int(max(-step, min(step, dy))))
+        time.sleep(wait)
+    return last
+
+
+def wb_double_click(h, x: int, y: int, settle: float = 3.0, hold: float = 0.12, gap: float = 0.12):
+    """Hover (x, y) then double-click with explicit press/release steps.
+
+    Each press is held ~`hold` s so it spans several frames (a zero-length click can fall between
+    two input samples), and the gap is small enough for Workbench's double-click interval.
+    Run the emulator at warp=False: under warp the Amiga clock runs several times faster than
+    the wall clock and the gap would exceed that interval.
+    """
+    pos = wb_move_to(h, x, y)
+    for i in range(2):
+        h.mouse_down(1)
+        time.sleep(hold)
+        h.mouse_up(1)
+        if i == 0:
+            time.sleep(gap)
+    time.sleep(settle)
+    return pos

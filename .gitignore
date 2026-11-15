@@ -71,3 +71,6 @@ a.out
 
 # Status reports for the user (local)
 reports/
+
+# Downloaded emulator (tools/fetch_copperline.sh)
+tools/bin/
