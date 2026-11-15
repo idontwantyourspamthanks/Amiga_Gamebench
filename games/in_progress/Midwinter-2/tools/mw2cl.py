@@ -141,8 +141,9 @@ class MW2(Session):
     def to_cockpit(self, level: str = "intermediate"):
         """Hallway -> RAIDS -> level -> island -> briefing -> equipment -> thumbs-up -> in-game cockpit.
 
-        Emulation is deterministic, so the settle times below are exact, not guesses; the
-        checkpoints (see tests/) assert the screen at each stop.  Every press is HELD ~1 s.
+        Emulation is deterministic, so a given build and image replay these fixed settle times
+        identically; they are not synchronised to the screen, so re-check them (and the final
+        HUD hash in tests/) if the image, patch or emulator changes.  Every press is HELD ~1 s.
         """
         self.hold_click(*HALL_RAIDS, settle=10)          # level pick
         self.hold_click(*LEVELS[level], settle=10)        # raid map
