@@ -25,7 +25,7 @@ All emulation, navigation, measurement and testing uses [Copperline](https://cop
 | Hard-disk image (RDB: Workbench 3.1 + one volume per game) and fixed VHD | built; boots to the Workbench desktop |
 | Tests | `python3 -m pytest tests` passes (static, VHD, HD boot, bit-exact load, desktop click-through, direct-controls gate; about 5 minutes) |
 | Midwinter II on A1200 / KS 3.1 | boots and plays from the HD image and from three floppies |
-| Direct controls | done and gated tick by tick (`patches/p5_direct.s`, `tools/mw2patch.py`, `tests/test_mw2_direct_controls.py`); method in `games/in_progress/Midwinter-2/work/notes/direct_controls_howto.md` |
+| Direct controls | done and gated tick by tick (`patches/p5_direct.s`, `tools/mw2patch.py`, `tests/test_mw2_direct_controls.py`); method in `games/in_progress/Midwinter-2/work/notes/direct_controls_howto.md`. The retail "Press M / J / K" device screen, which the SPL crack had removed, is restored by the same patch tool |
 | World rate (VBL-locked or CPU-bound?) | open: needs the Copperline measurement (`PLAN.md` P4) |
 | Rendering, credit line, A500/A600 runs, real-hardware test | not started / not verified |
 | Midwinter (1) | disks collected; not started |

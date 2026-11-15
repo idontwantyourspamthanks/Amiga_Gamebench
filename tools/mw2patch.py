@@ -52,6 +52,27 @@ HANDLER_LEN = 16
 # mouse poller entry: tst.w <GATE>; beq.w +$f0; lea <x>,a0; btst.b #6,$bfe001
 POLLER_RE = re.compile(rb"\x4a\x79(....)\x67\x00\x00\xf0\x41\xf9....\x08\x39\x00\x06\x00\xbf\xe0\x01", re.S)
 
+# Device selector ("Press 'M' for Mouse / 'J' / 'K'"): the retail game calls it with `bsr.w` right after the
+# start-up `jsr` below.  The SPL crack overwrote that call (and a second one) with four NOPs, which is why
+# the selector never appeared.  The Quartex release still has `61 00 3b cc` (bsr.w to the routine) there.
+SELECTOR_SLOT_RE = re.compile(rb"\x4e\xb9....(\x4e\x71\x4e\x71)\x4e\x71\x4e\x71\x43\xf9....\x41\xf9....\x4a\x10\x67\x0a", re.S)
+# the routine itself: jsr <a>; move.w #-1,<w>; jsr <b>; move.w #1,$12e(a6); move.w #$a0,$1e(a6); move.w #$96,$20(a6)
+SELECTOR_RE = re.compile(rb"\x4e\xb9....\x33\xfc\xff\xff....\x4e\xb9....\x3d\x7c\x00\x01\x01\x2e\x3d\x7c\x00\xa0\x00\x1e\x3d\x7c\x00\x96\x00\x20", re.S)
+
+
+def find_selector(code: bytes) -> tuple[int, int]:
+    slot = unique(code, SELECTOR_SLOT_RE, "device-selector call slot")
+    slot = SELECTOR_SLOT_RE.match(code, slot).start(1)
+    return slot, unique(code, SELECTOR_RE, "device-selector routine")
+
+
+def selector_call(site: dict) -> bytes:
+    disp = site["selector_to"] - (site["selector_at"] + 2)
+    if not -0x8000 <= disp < 0x8000:
+        raise PatchError("selector routine out of bsr.w range")
+    return b"\x61\x00" + struct.pack(">h", disp)
+
+
 JMP_ABS = b"\x4e\xf9"
 
 
@@ -171,7 +192,9 @@ def find_sites(h: Hunk0) -> dict:
                       ("gate", poller + 2), ("handler acc", handler + 2)):
         if reloc_target(h, off) != 1:
             raise PatchError(f"{name} operand at {off:#x} does not relocate against the DATA hunk")
-    return dict(cons=cons, handler=handler, acc=acc, accy=accy, out=out, gate=gate)
+    sel_at, sel_to = find_selector(code)
+    return dict(cons=cons, handler=handler, acc=acc, accy=accy, out=out, gate=gate,
+                selector_at=sel_at, selector_to=sel_to)
 
 
 # ---- blob assembly (vasm), with relocation discovery ---------------------------------------
@@ -249,6 +272,10 @@ def apply(raw: bytes, verbose: bool = True) -> bytes:
         h.groups[0].append(slot)
         h.code[site_off:site_off + 2] = JMP_ABS
         struct.pack_into(">I", h.code, slot, base + syms[entry])
+    code_sel = site["selector_at"]
+    if bytes(h.code[code_sel:code_sel + 4]) != b"\x4e\x71\x4e\x71":
+        raise PatchError("selector slot is not two NOPs")
+    h.code[code_sel:code_sel + 4] = selector_call(site)      # restore the M/J/K device-selector screen
     if verbose:
         print(f"relocs added to DATA group: {len(blob_relocs)}; moved to hunk-0 group: 2")
     return h.serialise()
@@ -270,7 +297,8 @@ def verify(orig_raw: bytes, new_raw: bytes) -> None:
     new = bytes(hn.code)
     assert new[:len(old)] != old
     diffs = [i for i in range(len(old)) if old[i] != new[i]]
-    allowed = set(range(site["cons"], site["cons"] + 6)) | set(range(site["handler"], site["handler"] + 6))
+    allowed = (set(range(site["cons"], site["cons"] + 6)) | set(range(site["handler"], site["handler"] + 6))
+               | set(range(site["selector_at"], site["selector_at"] + 4)))
     stray = [i for i in diffs if i not in allowed]
     if stray:
         raise PatchError(f"unexpected modified bytes in the original code: {[hex(i) for i in stray[:8]]}")
@@ -291,7 +319,12 @@ def verify(orig_raw: bytes, new_raw: bytes) -> None:
     for slot in (site["cons"] + 2, site["handler"] + 2):
         if long_at(new, slot) < len(old) or slot not in hn.groups[0]:
             raise PatchError("jmp operand does not point into the blob or is not relocated")
-    print("verify: OK (only the two 6-byte jmp sites changed; blob relocs exact; hunks 1-3 intact)")
+    for off in (site["selector_at"], site["selector_at"] + 1, site["selector_at"] + 2, site["selector_at"] + 3):
+        if off not in diffs:
+            raise PatchError("device-selector call was not restored")
+    if new[site["selector_at"]:site["selector_at"] + 4] != selector_call(site):
+        raise PatchError("device-selector call has the wrong displacement")
+    print("verify: OK (only the two 6-byte jmp sites and the 4-byte selector call changed; blob relocs exact; hunks 1-3 intact)")
 
 
 # ---- CLI ------------------------------------------------------------------------------------------
@@ -304,7 +337,7 @@ def main(argv: list[str]) -> int:
     if cmd == "find" and len(argv) == 3:
         h = Hunk0(Path(argv[2]).read_bytes())
         for k, v in find_sites(h).items():
-            where = f"hunk-0 offset, file offset {v + h.code_off:#x}" if k in ("cons", "handler") \
+            where = f"hunk-0 offset, file offset {v + h.code_off:#x}" if k in ("cons", "handler", "selector_at", "selector_to") \
                 else "DATA hunk (1) offset"
             print(f"{k:8s} {v:#x} ({where})")
         return 0

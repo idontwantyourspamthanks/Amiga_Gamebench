@@ -104,6 +104,8 @@ Port the consumer-side replacement:
 
 Start from the ST constants (`MOUSE_GAIN 1.5` in 8.8, cap 1000, `YAW_PCT 50`) and tune only with before/after traces. Acceptance: hold right → constant turn; release → stop at once; mouse nudge → one small turn, then no further rotation; all vehicle types that steer on X.
 
+**Device selector restored (2026-11-15).** The retail game shows "Press 'M' for Mouse / 'J' for Joystick / 'K' for Keyboard" after the credits (a user running the game on a MiSTer Amiga core saw it; our build did not). Cause: the SPL crack overwrote the `bsr.w` to the selector routine, and a second call, with four NOPs at hunk-0 offset `0x1F170` (the Quartex release still has `61 00 3B CC` / `61 00 12 42` there; the first lands on the selector, the second on code the other crack also edited, left out). `tools/mw2patch.py` now restores only the first call (4 bytes, `verify` checks them). Gated by `tests/test_mw2_direct_controls.py::test_device_selector_is_offered_and_sets_the_gates` (M, J and K each pressed on the real screen reach the hallway and set the game's device gates). After J or K the game drives its own menus with that device, so the mouse-driven front-end harness only continues from M. The unpatched volume stays the unmodified SPL game (no selector), so it remains a faithful A/B control. Joystick turning after a real J selection (rather than poked gates) is not yet exercised.
+
 ## P6 — Rendering
 
 Only after timing and controls are gated. Candidate work, in order of expected value:

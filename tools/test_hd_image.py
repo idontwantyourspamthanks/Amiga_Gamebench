@@ -91,7 +91,7 @@ def main(argv=None) -> int:
             res["hunk0"] = load["hunks"][0]
             if load["bad"]:
                 raise CopperlineError(f"hunks differ from the file after LoadSeg: {load['bad']}")
-            t = g.boot()
+            t = g.boot(loaded=True)
             res["hallway"] = f"{t:.0f}s"
             if shots:
                 g.shot(shots / f"{a.game}_hallway.png")

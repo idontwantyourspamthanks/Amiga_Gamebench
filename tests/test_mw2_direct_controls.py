@@ -115,3 +115,28 @@ def test_unpatched_game_keeps_the_yoke(cockpit):
     assert s16(g.read_w(a["out"])) != 0
     g.run_for(3)
     assert g.read_w(a["heading"]) != h0
+
+
+@pytest.mark.parametrize("choice,want", [("M", (0xFFFF, 0, 0)), ("J", (0, 0xFFFF, 0)), ("K", (0, 0, 0xFFFF))])
+def test_device_selector_is_offered_and_sets_the_gates(image, scratch_dir, choice, want):
+    """The retail game asks "Press M / J / K" after the credits (the SPL crack had removed it).
+
+    Each key, pressed on the real screen, must reach the hallway and leave the game's own device gates
+    (mouse, joystick = mouse-4, keys = mouse-2) set accordingly.  After J or K the game drives its menus
+    with that device, so the front end is not navigated further here.
+    """
+    import amigahd
+    import mw2cl
+    from clharness import Machine
+    scratch = scratch_dir / f"selector_{choice}.hdf"
+    amigahd.scratch(image, scratch, amigahd.autorun_script("mw2"))
+    with mw2cl.MW2(Machine(ide=scratch)) as g:
+        g.boot(select=choice)
+        assert g.selector() is not None, "patched build must call the device selector"
+        G = g.locate()["gate"]
+        assert (g.read_w(G), g.read_w(G - 4), g.read_w(G - 2)) == want
+
+
+def test_unpatched_spl_game_has_no_selector(cockpit):
+    """Documents the crack: the original SPL executable never asks (the call is NOPed)."""
+    assert cockpit("mw2orig").selector() is None

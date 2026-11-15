@@ -102,9 +102,9 @@ h.screenshot('/tmp/cockpit.png')           # expect: a jeep cockpit (green dashb
 - `extra=['joystick_port_1=keyboard']` makes the host arrow keys act as a port-1 joystick, needed
   only for the `J` test. The mouse stays on port 0.
 - The game is in **mouse mode (M) at mission start**: the mouse gate word is 1 at cockpit entry.
-  `J`/`K` are tested by setting their gate words in the debugger (§5.3). The in-game selector
-  screen (strings "Press M/J/K") is the routine near live `0x56df6`; no direct caller of it was
-  found, so how a player reaches it is **not verified**.
+  `J`/`K` are tested by setting their gate words (§5.3), or, since 2026-11-15, through the game's own
+  "Press 'M' / 'J' / 'K'" screen: the SPL crack had NOPed out the call to it and `mw2patch.py` restores
+  it (see `PLAN.md` P5; `mw2cl.MW2.boot(select="J")`).
 
 ---------------------------------------------------------------------------------------------------
 

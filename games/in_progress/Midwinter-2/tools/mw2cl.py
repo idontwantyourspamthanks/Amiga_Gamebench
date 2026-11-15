@@ -46,6 +46,11 @@ THUMBS_UP = (264, 16)
 HALLWAY_REGION = (300, 100, 120, 60)    # corridor, away from the pointer (field pixels)
 HALLWAY_DIGEST = "9cb6dabffa4f3c25"     # capture.region_digest of HALLWAY_REGION in the hallway (A1200, KS 3.1)
 
+# device selector (restored by mw2patch): `bsr.w` in the slot after the start-up jsr; its key-wait loop is +0x96
+SELECTOR_CALL_RE = re.compile(rb"\x4e\xb9....(\x61\x00..)\x4e\x71\x4e\x71\x43\xf9....\x41\xf9....\x4a\x10\x67\x0a", re.S)
+SELECTOR_LOOP_OFF = 0x96
+SELECTOR_KEYS = {"M": 0x37, "J": 0x26, "K": 0x27}      # Amiga raw key codes
+
 
 class MW2(Session):
     @classmethod
@@ -94,8 +99,43 @@ class MW2(Session):
         return pos
 
     # -- the front end ----------------------------------------------------------------------
-    def boot(self, timeout: float = 220):
-        """Run from power-on (autorun scratch image) to the hallway; returns emulated seconds."""
+    def selector(self) -> int | None:
+        """Address of the selector's wait loop if this build calls the M/J/K device selector, else None.
+
+        The retail game shows "Press 'M' for Mouse / 'J' for Joystick / 'K' for Keyboard" after the credits.
+        The SPL crack NOPed that call out; tools/mw2patch.py restores it, so the patched volume has it
+        and the unpatched (SPL) volume does not.  Found by skeleton: `bsr.w <routine>` in the slot after
+        the start-up jsr; the wait loop is the routine's +0x96.
+        """
+        base, code = self.code_hunk()
+        m = SELECTOR_CALL_RE.search(code)
+        if not m:
+            return None
+        site = m.start(1)
+        return base + site + 2 + struct.unpack(">h", code[site + 2:site + 4])[0] + SELECTOR_LOOP_OFF
+
+    def boot(self, select: str = "M", timeout: float = 220, loaded: bool = False):
+        """Run from power-on (autorun scratch image) to the hallway; returns emulated seconds.
+
+        If the game offers the device selector, wait until it is really in its key-wait loop (a
+        breakpoint, not a delay: keys pressed earlier are lost) and press `select` (M, J or K).
+        """
+        if not loaded:
+            if self.now() < 1.0:
+                self.run_to(1.0)
+            self.call("break.add", kind="loadseg", name="mwII")
+            r = self.run_to(self.now() + timeout)
+            self.call("break.clear")
+            if r.get("reason") != "loadseg":
+                raise CopperlineError(f"mwII never loaded ({r.get('reason')})")
+        loop = self.selector()
+        if loop is not None:
+            bp = self.break_pc(loop)
+            r = self.run_to(self.now() + timeout)
+            self.unbreak(bp)
+            if r.get("reason") != "breakpoint":
+                raise CopperlineError(f"device selector never reached ({r.get('reason')})")
+            self.key(SELECTOR_KEYS[select], hold_ms=300)
         return self.wait_region(HALLWAY_REGION, HALLWAY_DIGEST, timeout=timeout, step=2.0)
 
     def to_cockpit(self, level: str = "intermediate"):

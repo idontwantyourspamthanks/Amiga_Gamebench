@@ -52,11 +52,11 @@ def test_desktop_click_through_starts_the_game(image, scratch_dir):
     """The user path: double-click the volume, double-click Play -> the game reaches its hallway."""
     scratch = scratch_dir / "clickthrough.hdf"
     shutil.copyfile(image, scratch)                      # Workbench writes icon positions: never the shipped image
-    with Session(Machine(ide=scratch)) as s:
+    with mw2cl.MW2(Machine(ide=scratch)) as s:
         s.run_to(30)
         s.mouse_to(*VOLUME_ICON)
         s.double_click()
         s.run_for(4)
         s.mouse_to(*PLAY_ICON)
         s.double_click()
-        s.wait_region(mw2cl.HALLWAY_REGION, mw2cl.HALLWAY_DIGEST, timeout=250, step=2.0)
+        s.boot()                                         # the patched game now offers the M/J/K selector first

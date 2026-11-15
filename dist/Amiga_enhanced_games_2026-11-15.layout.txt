@@ -1,5 +1,5 @@
-Amiga_enhanced_games_2026-11-15.hdf  (28385280 bytes, RDB disk, md5 0ebf8fac77d572fcd890cc3fbbb867f2)
-Amiga_enhanced_games_2026-11-15.vhd  (28385792 bytes, fixed VHD of the same disk, md5 fa52105011451a52097b3705a7258183)
+Amiga_enhanced_games_2026-11-15.hdf  (28385280 bytes, RDB disk, md5 c51cd531f762a170e6267ef3fbea32bf)
+Amiga_enhanced_games_2026-11-15.vhd  (28385792 bytes, fixed VHD of the same disk, md5 a33f15a215e3a422bd2b6d655387adda)
 built 2026-11-15 by tools/make_amiga_hd.py from the current patched builds
 
 Partition table (RDB, geometry 16 heads x 63 sectors, all DOS\1 = FFS)
@@ -10,8 +10,8 @@ Partition table (RDB, geometry 16 heads x 63 sectors, all DOS\1 = FFS)
 
 Boots to the Workbench 3.1 desktop (DH0). Each game is its own volume: open it and
 double-click Play (a script run by C:IconX), or from a Shell:  CD Midwinter2:  then  mwII
-The game only runs from the ROOT of its volume (its own DH0 installer's layout) and
-needs a CLI process, hence the Play script rather than a bare tool icon.
+The game only runs from the ROOT of its volume (its own DH0 installer's layout);
+started as a bare tool icon mwII Gurus, while the Play script (a CLI context) runs it.
 MaxTransfer is 0x1FE00 on every partition: with a larger value the A1200's IDE path
 returns wrong data for reads over 128 KiB and mwII crashes at start.
 

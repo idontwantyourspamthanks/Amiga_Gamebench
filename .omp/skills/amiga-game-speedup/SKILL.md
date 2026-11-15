@@ -66,6 +66,7 @@ Reference for the behaviour and the gates: `AtariST/gamebench/games/done/midwint
 - **Floppy delivery:** disk swaps and `LoadSeg` overlays are part of the original design; do not break volume names or the loader. The SPL program disk has ~241 KB free.
 - **Kickstart 3.1 AmigaDOS** may add assigns/patches absent on 1.3; test the exact startup sequence you ship.
 - **Crack intros** (Sepultura, Quartex) add minutes to boot and contain offensive text; skip them and verify the game still initialises.
+- **Cracks remove retail behaviour, not just protection.** The SPL release NOPed out the call to Midwinter II's "Press M / J / K" device selector (a MiSTer Amiga-core user saw the screen, we did not). Diff the executable against another release (`cmp -l`, here SPL vs Quartex: 59 bytes) and read every difference; a call with no callers (`m68dis --callers` empty) is the signature of a removed call. Restoring it was a 4-byte `bsr.w` (`tools/mw2patch.py`). After J or K the game drives its own menus with that device, so navigate with M.
 - **Midwinter II's front end ignores quick presses** (VBL-sampled): hold the left button ~1 s emulated.
 
 ## Estimating gains
