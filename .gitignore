@@ -74,3 +74,6 @@ reports/
 
 # Downloaded emulator (tools/fetch_copperline.sh)
 tools/bin/
+
+# Copperline save states (local, contain game RAM)
+*.clstate

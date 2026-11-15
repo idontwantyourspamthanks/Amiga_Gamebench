@@ -24,7 +24,7 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
-NO_POS = 0x80000000
+NO_POS = -0x80000000          # NO_ICON_POSITION (0x80000000) as the signed longword it is stored as
 WBDISK, WBDRAWER, WBTOOL, WBPROJECT = 1, 2, 3, 4
 
 

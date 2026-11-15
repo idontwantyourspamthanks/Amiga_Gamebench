@@ -411,10 +411,26 @@ class Session:
         return Path(path)
 
     def digest(self) -> str:
-        return str(self.call("capture.digest"))
+        """FNV-1a hash of the current frame (deterministic for a given run; includes the pointer sprite)."""
+        return self.call("capture.digest")["digest"]
 
     def region_digest(self, x, y, w, h) -> str:
-        return str(self.call("capture.region_digest", x=x, y=y, w=w, h=h))
+        """Hash of a rectangle of the :meth:`shot` raster; pick one away from the pointer."""
+        return self.call("capture.region_digest", x=x, y=y, w=w, h=h)["digest"]
+
+    def wait_region(self, region, want: str | Sequence[str], timeout: float = 120, step: float = 1.0) -> float:
+        """Run in ``step`` slices until the region's hash is one of ``want``; returns emulated seconds.
+
+        This is the synchronisation primitive for navigation: wait for the screen you expect,
+        never for a guessed delay.  Raises on timeout (emulated seconds)."""
+        want = {want} if isinstance(want, str) else set(want)
+        end = self.now() + timeout
+        while True:
+            if self.region_digest(*region) in want:
+                return self.now()
+            if self.now() >= end:
+                raise CopperlineError(f"region {region} never reached {sorted(want)} within {timeout}s (last {self.region_digest(*region)})")
+            self.run_for(step)
 
     def save_state(self, path):
         return self.call("state.save", path=str(Path(path).resolve()))
