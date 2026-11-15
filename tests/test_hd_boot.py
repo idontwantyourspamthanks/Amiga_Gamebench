@@ -23,6 +23,15 @@ def test_boots_to_workbench_with_every_volume(image, goldens):
         goldens.check("desktop_icons_a1200_ks31", s.region_digest(*DESKTOP_ICONS))
 
 
+def test_vhd_boots_to_the_same_desktop_as_the_hdf(image, goldens):
+    vhd = image.with_suffix(".vhd")
+    if not vhd.exists():
+        pytest.skip("no .vhd next to the image")
+    with Session(Machine(ide=vhd)) as s:
+        s.run_to(30)
+        goldens.check("desktop_icons_a1200_ks31", s.region_digest(*DESKTOP_ICONS))
+
+
 @pytest.mark.parametrize("game,device", [("mw2", "DH1"), ("mw2orig", "DH2")])
 def test_game_loads_bit_exact_from_the_hard_disk(image, scratch_dir, game, device):
     """After LoadSeg every hunk in RAM equals the relocated file on the volume.

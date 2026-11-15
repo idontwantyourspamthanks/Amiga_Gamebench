@@ -4,6 +4,10 @@ Evidence gathered on the SPL 3-disk set, FS-UAE 3.2.35, A1200 model with
 Kickstart 3.1 rev 40.68 (`os/Kickstart/amiga-os-310-a1200.rom`), 2 MB chip.
 A500 + Kickstart 1.3 behaves the same for the intro.
 
+> 2026-11-15: measured with FS-UAE, which has been replaced by Copperline (`tools/clharness.py`,
+> skill `amiga-copperline`). The boot-path facts stand; the FS-UAE commands and the wall-clock
+> measurements are historical. Copperline numbers are in emulated time and reproducible.
+
 ## Boot path
 
 `S/startup-sequence` (SPL) is:

@@ -1,5 +1,10 @@
 # Timing baseline: what is measured, and what is still open (2026-11-14)
 
+> 2026-11-15: this baseline was taken with FS-UAE, which has been replaced by Copperline. The
+> emulator-real-time result and the list of invalid probes stand as history; the open question (world
+> ticks per emulated frame, slow vs fast CPU) should be re-measured on Copperline, where emulated time
+> is exact and nothing is paused (`PLAN.md` P4).
+
 ## Measurement (FS-UAE, `warp=False`, `video_sync=0`, unpatched `d1_skipintro.adf`)
 
 Presented frames over a 10 s wall sleep, 40 s after boot (same script for both models):

@@ -12,7 +12,7 @@
 A routine runs from its start to the next call target unless --end is given.
 Call targets become `sub_XXXXXX` labels. Amiga hardware registers and common
 custom-chip addresses are annotated. Profile input is `addr pct cycles` per
-line (see tools/amigaharness.py profile).
+line (e.g. from a Copperline `profile.start` capture or a PC histogram).
 """
 from __future__ import annotations
 

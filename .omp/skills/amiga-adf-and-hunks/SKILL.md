@@ -1,6 +1,6 @@
 ---
 name: amiga-adf-and-hunks
-description: Practical facts about Amiga ADF floppy images, AmigaDOS bootblocks, hunk executables and how to patch them in place on floppy-only releases. Covers disk geometry, OFS/FFS, xdftool usage, hunk parsing gotchas, flat-image disassembly, disk space budgeting and byte-level build verification. Use whenever reading, unpacking, rebuilding or patching an Amiga game disk.
+description: Practical facts about Amiga ADF floppy images, RDB hard-disk images (MaxTransfer, rdbtool/xdftool), Workbench icons, AmigaDOS bootblocks, hunk executables and how to patch them in place. Covers disk geometry, OFS/FFS, xdftool usage, hunk parsing gotchas, flat-image disassembly, disk space budgeting and byte-level build verification. Use whenever reading, unpacking, rebuilding, patching or packaging an Amiga game disk or hard-disk image.
 ---
 
 # ADF images and Amiga hunk programs
@@ -37,14 +37,14 @@ description: Practical facts about Amiga ADF floppy images, AmigaDOS bootblocks,
 - The hunk type word also carries the chip flag: a chip data hunk is `0x400003EA`, not `0x3EA`.
 - Relocation offsets are **byte offsets inside the segment**. `RELOC32` entries are `count, target_hunk, offsets...`, terminated by count 0. The long at each offset is an offset within the target hunk; the loader adds the target's load address.
 - `HUNK_EXT`, `HUNK_SYMBOL`, `HUNK_DEBUG`, `HUNK_END`: consume them correctly or the parser shifts. Overlays/libs are rejected on purpose.
-- `tools/amigabin.py flat` lays hunks out sequentially from `--base` and resolves relocations. **This is a static layout, not the runtime layout**: LoadSeg allocates non-chip hunks in one block and chip hunks separately, and the base varies with the OS version, startup sequence and RAM. Use the flat image for disassembly and the map to translate offsets; read the actual base from the debugger when it matters.
+- `tools/amigabin.py flat` lays hunks out sequentially from `--base` and resolves relocations. **This is a static layout, not the runtime layout**: LoadSeg allocates non-chip hunks in one block and chip hunks separately, and the base varies with the OS version, startup sequence and RAM. Use the flat image for disassembly and the map to translate offsets; read the real bases from Copperline (`segments.list`, or stop at `break.add kind=loadseg`) when it matters.
 
 `tools/m68dis.py` disassembles a flat image (`--base` for runtime addresses, `--cpu 68020`), labels call targets, answers `--xref`/`--callers`, and annotates Amiga custom-chip/CIA registers.
 
 ## Patching a floppy-only release
 
 Constraints:
-- A stock Midwinter II program disk has about **19 KB free** (OFS, 97% full). Do not assume room for a 32 KB payload like the Atari ST build.
+- The SPL Midwinter II program disk (`program`) is 72.6% used with about **241 KB free** (483 free blocks; `xdftool info`). A 32 KB payload fits, but the patched `MWII` grows too (the appended blob is 196 bytes). (An earlier note of "19 KB free / 97% full" misread `xdftool list`'s data-vs-filesystem split of the used blocks.)
 - Options, cheapest first:
   1. **Same-size in-place edits** in the executable (patch, then trampoline into a gap or into a new hunk).
   2. **Append a new hunk** to the executable: add `HUNK_CODE`, bump `table_size`/`last` and the size table, keep relocations valid. File grows by code + ~40 bytes of headers; verify with `adf.py diff` that only MWII's sectors changed.
@@ -60,3 +60,16 @@ Build gates:
 ## Disk labels and the game's loader
 
 Midwinter II's startup runs `INTRO` then `mwII`; the game later opens files by name from the volumes `program`, `grafix`, `missions`. If you rename a volume or repack a disk, the game's "insert disk" prompts and its directory cache break. Keep labels and file names identical unless the loader is patched and gated.
+
+## Hard-disk images (RDB) and xdftool/rdbtool quirks
+
+`tools/make_amiga_hd.py` builds the all-games disk; `tools/amigahd.py` makes scratch copies with a rewritten `S:User-Startup`; `tools/amigaicon.py` writes Workbench `.info` files.
+
+- **MaxTransfer must be 0x1FE00 on every RDB partition** (`rdbtool IMG add ... max_transfer=0x1fe00`, or `rdbtool IMG change DH1 max_transfer=0x1fe00`). The amitools default 0xFFFFFF made the A1200 IDE path return wrong data for any read past the first 128 KiB of a transfer: a 218 KB hunk loaded corrupt and the game Guru'd differently with each memory layout. Check it with `rdbtool IMG info`.
+- A 218 KB executable that LoadSegs bit-exact proves the read path: relocate the file with the real hunk bases (`segments.list`) and diff against RAM at the `loadseg` stop (`tools/test_hd_image.py check_load`).
+- `rdbtool` commands are **separate argv items** (`create chs=C,H,S`, `init`, `add name=DH1 dostype=DOS1 bootable=False max_transfer=0x1fe00 size=8MiB`), `size=` accepts `MiB`. `import <part> <file>` needs a file of exactly the partition size; `export <part> <file>` gives one.
+- `xdftool` takes the image type from the **file extension**: name the exported partition `*.hdf`. `unpack <host_dir>` (not `/ <dir>`); `format <volume> ffs`; `boot install`; `pack` needs `.blkdev`.
+- Rewriting one file on an RDB partition: `rdbtool IMG export DH0 p.hdf; xdftool p.hdf delete S/User-Startup; xdftool p.hdf write host S/User-Startup; rdbtool IMG import DH0 p.hdf` (about 1 s).
+- A fixed VHD is the raw disk + a 512-byte `conectix` footer (`make_amiga_hd.write_vhd`); Copperline reads it, use the raw `.hdf` for `dd` to real media.
+- **Game-on-HD facts for Midwinter II:** the game's own installer (`dh0_install1`) copies `mwII, progdir, midword.fsd, cods.bin` plus all of `grafix:` and `missions:` to the **volume root** and runs `mwII`; it only works there (a drawer ends at "insert graphics disk"). It needs a CLI process: started as a Workbench tool (a plain tool icon) it Gurus. Hence a `Play` script run by `C:IconX` from a project icon (default tool `C:IconX`, stack 40000).
+- Workbench `.info`: see `tools/amigaicon.py` (round-trips all 42 icons of the 3.1 Workbench disk byte-exactly). The on-disk "pointer" fields are present-flags; absent and empty tool-type tables are different.

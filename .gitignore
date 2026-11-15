@@ -77,3 +77,4 @@ tools/bin/
 
 # Copperline save states (local, contain game RAM)
 *.clstate
+*.vhd

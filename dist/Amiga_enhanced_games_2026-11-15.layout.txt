@@ -1,4 +1,5 @@
-Amiga_enhanced_games_2026-11-15.hdf  (28385280 bytes, RDB disk, md5 b5d36046f3d1bb5e5b53e89d354f5ba5)
+Amiga_enhanced_games_2026-11-15.hdf  (28385280 bytes, RDB disk, md5 0ebf8fac77d572fcd890cc3fbbb867f2)
+Amiga_enhanced_games_2026-11-15.vhd  (28385792 bytes, fixed VHD of the same disk, md5 fa52105011451a52097b3705a7258183)
 built 2026-11-15 by tools/make_amiga_hd.py from the current patched builds
 
 Partition table (RDB, geometry 16 heads x 63 sectors, all DOS\1 = FFS)
@@ -15,13 +16,17 @@ MaxTransfer is 0x1FE00 on every partition: with a larger value the A1200's IDE p
 returns wrong data for reads over 128 KiB and mwII crashes at start.
 
 Use
-  Copperline:  dist/run_hd.sh  (see README)
-  real Amiga:  dd if=<this file> of=/dev/sdX bs=1M conv=fsync  (CF/SD/IDE adapter; check the device)
+  Copperline:  dist/run_hd.sh  (Workbench desktop)   dist/run_mw2.sh  (straight into Midwinter II)
+  other emulators: attach the .hdf (raw RDB disk) or the .vhd (the same disk + a 512-byte VHD footer)
+                   as the IDE master of an A1200 with Kickstart 3.1
+  real Amiga:  dd if=<the .hdf> of=/dev/sdX bs=1M conv=fsync  (CF/SD/IDE adapter; check the device;
+               use the .hdf, not the .vhd, for raw writes)  [not yet tried on real hardware]
                or copy the install zip's files to the root of an existing partition
-  Needs Kickstart 3.1 (FFS and Workbench 3.1 are 2.0+ only); tested A1200 + KS 3.1
+  Needs Kickstart 3.1 (FFS and Workbench 3.1 are 2.0+ only). Tested in Copperline: A1200 + KS 3.1.
 
-Rebuild
+Rebuild and test
   python3 tools/mw2patch.py apply <MWII from disk 1> games/in_progress/Midwinter-2/work/build/MWII_direct
   python3 tools/make_amiga_hd.py
   python3 tools/make_amiga_zip.py            (the install zip)
-  python3 tools/test_hd.py                   (boot + desktop click-through check)
+  python3 -m pytest tests                    (static + emulator tests, ~5 minutes)
+  python3 tools/test_hd_image.py dist/<this>.hdf mw2     (one game from power-on to its in-game view)

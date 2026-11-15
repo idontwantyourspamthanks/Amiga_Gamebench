@@ -31,7 +31,7 @@ m = Machine(model="A1200", ide="dist/Amiga_enhanced_games_<date>.hdf")   # A1200
   - capture: `shot(path)`, `digest()`, `region_digest(x,y,w,h)`, `wait_region(region, want_digest)` (the navigation sync primitive), `save_state/load_state`.
   - input: `mouse(dx,dy,left=..)`, `click(hold=)`, `double_click()`, `mouse_to(x,y)`, `key(rawkey)`, `type(text)`, `joy(...)`.
 
-## Facts and traps (all observed, not from docs alone)
+## Facts and traps (observed in this repo unless marked "docs")
 - **Coordinates.** `Session.shot()` / `capture.digest` use the unframed field (716x285 on a PAL A1200 desktop; hires px wide, scan lines tall). The CLI `--screenshot-after` PNG is aspect-corrected (716x540) and `--mouse-to-after` uses *its* pixels. Never mix them. Midwinter's 320x200 screen sits at field x = 62+2*gx, y = 16+gy.
 - `input.mouse_to` steers the **sprite-0 pointer** (Workbench pointer): works for Workbench. A game with its own cursor logic (Midwinter: deadzone, eased, 0.5 px/count) will not converge; steer closed-loop on the game's own cursor words with `input.mouse` counts instead (`mw2cl.MW2.goto`).
 - Double-click on Workbench: `click` twice with `hold=0.08`, gap 0.12 emulated s (`Session.double_click`). Exact in emulated time.
@@ -43,8 +43,18 @@ m = Machine(model="A1200", ide="dist/Amiga_enhanced_games_<date>.hdf")   # A1200
 - The game reads `$BFEC01` in its own handler: an injected key arrives (verified with an MMIO watch). If a key "does nothing", the game state is wrong, not the injection.
 - Cursor/`hold`: Midwinter's front end ignores quick clicks; hold the left button ~1 s emulated.
 - Boot/cycle cost: unpaced; a full autorun boot + front end + cockpit is a few minutes wall. Use a save state for repeated experiments.
-- `[ide] slave` only works with Kickstart 3.1.4+. Boot partition priority is in the RDB; `bootpri` applies to bare HDFs and host folders only.
+- `run_until {"stable_frames": N}` fires on **any** static screen, including a loading screen or a still Workbench drawer (it fired at 38 s on the drawer while the game was still loading). Wait for a *specific* region hash instead (`wait_region`).
+- Amiga raw key codes for `input.key` (standard map; only space `0x40` was exercised here): keypad 4 / 6 `0x2D` / `0x2F`, return `0x44`, esc `0x45`. A joystick on port 2 (`s.joy(port=2, left=True)`) is what Midwinter's J mode reads (verified: turn value -200/+200 per tick).
+- Finding a game's own variables without symbols: snapshot its data hunks at 3-4 input states (e.g. cursor moved 8 counts per step), keep words that change by a constant step. Offsets inside a hunk are stable per build (Midwinter cursor: data hunk +0x308E/+0x3090); bases move, so re-read `segments.list` each session. (`mw2cl.py` has the working example.)
+- `capture.screenshot` has an `overlays: ["sources"]` mode that tints pixels by origin (playfield/sprite N); the reply gives a legend of ids, not colours, so it is not a ready-made pointer finder.
+- Reading registers: `regs()["d"]`/`["a"]` are lists of 8 ints; `pc`, `sr` are plain.
+- (from the docs, not exercised here) `[ide] slave` only works with Kickstart 3.1.4+. Boot partition priority is in the RDB; `bootpri` applies to bare HDFs and host folders only.
 - HOSTFS (`filesys`) volumes boot Workbench (`bootpri=6`) and are handy for experiments, but they are not the shipped path; test the real RDB image.
+
+## Test suite and launchers
+- `python3 -m pytest tests -m "not emu"` (static, seconds); `python3 -m pytest tests` (everything, ~5 min). The `cockpit(game)` fixture boots a scratch copy once, saves a state, and each test restores it into a fresh emulator: results are exact and tests independent. `--bless` rewrites `tests/goldens.json` (frame hashes only).
+- `tools/test_hd_image.py IMG GAME` mirrors the ST bench: scratch copy + autorun, game harness to the in-game view, one `RESULT` line, non-zero exit on failure.
+- `dist/run_hd.sh [GAME]`, `dist/run_mw2.sh`, `dist/run_mw2_floppy.sh` call `tools/clrun.py`. `clrun.py ... --shot SECS out.png` runs the same configuration headless: use it to check a launcher without a display. The windowed path itself (Vulkan window) is unverified here: only `--print-config` and the headless run were exercised.
 
 ## Hard-disk images: MaxTransfer is not optional
 RDB partitions must set `MaxTransfer` to 0x1FE00 (`rdbtool add ... max_transfer=0x1fe00`). With amitools' default (0xFFFFFF) the A1200 IDE path returned wrong data for every read beyond the first 128 KiB of a transfer: `mwII`'s 218 KB code hunk was corrupt after LoadSeg and the game died with Gurus whose code changed with memory layout (`80000003`, `8000000B`, `80000004`). `tools/make_amiga_hd.py` sets it; `tools/test_hd_image.py` proves it (hunk diff = 0).

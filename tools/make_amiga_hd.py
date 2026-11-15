@@ -200,11 +200,44 @@ def build(out: Path, patched_exe: Path) -> list[dict]:
     return report
 
 
-def write_layout(out: Path, report: list[dict]) -> Path:
+def write_vhd(hdf: Path) -> Path:
+    """A fixed VHD: the raw disk followed by a 512-byte footer (Copperline, WinUAE, qemu and Windows read it)."""
+    import struct
+    size = hdf.stat().st_size
+    total = min(size // 512, 65535 * 16 * 255)                     # CHS per the VHD spec, appendix
+    if total >= 65535 * 16 * 63:
+        spt, heads, cth = 255, 16, total // 255
+    else:
+        spt = 17
+        cth = total // spt
+        heads = max(4, (cth + 1023) // 1024)
+        if cth >= heads * 1024 or heads > 16:
+            spt, heads, cth = 31, 16, total // 31
+        if cth >= heads * 1024:
+            spt, heads, cth = 63, 16, total // 63
+    cyls = cth // heads
+    ts = int((dt.datetime.combine(dt.date.today(), dt.time()) - dt.datetime(2000, 1, 1)).total_seconds())
+    uid = hashlib.md5(hdf.read_bytes()).digest()                    # reproducible: same disk, same id
+    f = bytearray(512)
+    f[0:8] = b"conectix"
+    struct.pack_into(">IIQI4sI4s", f, 8, 2, 0x00010000, 0xFFFFFFFFFFFFFFFF, ts, b"gbnc", 0x00010000, b"Wi2k")
+    struct.pack_into(">QQHBBI", f, 40, size, size, cyls, heads, spt, 2)         # fixed disk
+    f[68:84] = uid
+    struct.pack_into(">I", f, 64, (~sum(f)) & 0xFFFFFFFF)
+    vhd = hdf.with_suffix(".vhd")
+    with open(vhd, "wb") as fh:
+        with open(hdf, "rb") as src:
+            shutil.copyfileobj(src, fh, 1 << 20)
+        fh.write(f)
+    return vhd
+
+
+def write_layout(out: Path, report: list[dict], vhd: Path) -> Path:
     md5 = hashlib.md5(out.read_bytes()).hexdigest()
     lay = out.with_suffix(".layout.txt")
     lines = [
         f"{out.name}  ({out.stat().st_size} bytes, RDB disk, md5 {md5})",
+        f"{vhd.name}  ({vhd.stat().st_size} bytes, fixed VHD of the same disk, md5 {hashlib.md5(vhd.read_bytes()).hexdigest()})",
         f"built {dt.date.today()} by tools/make_amiga_hd.py from the current patched builds",
         "",
         "Partition table (RDB, geometry 16 heads x 63 sectors, all DOS\\1 = FFS)",
@@ -223,16 +256,20 @@ def write_layout(out: Path, report: list[dict]) -> Path:
         "returns wrong data for reads over 128 KiB and mwII crashes at start.",
         "",
         "Use",
-        "  Copperline:  dist/run_hd.sh  (see README)",
-        "  real Amiga:  dd if=<this file> of=/dev/sdX bs=1M conv=fsync  (CF/SD/IDE adapter; check the device)",
+        "  Copperline:  dist/run_hd.sh  (Workbench desktop)   dist/run_mw2.sh  (straight into Midwinter II)",
+        "  other emulators: attach the .hdf (raw RDB disk) or the .vhd (the same disk + a 512-byte VHD footer)",
+        "                   as the IDE master of an A1200 with Kickstart 3.1",
+        "  real Amiga:  dd if=<the .hdf> of=/dev/sdX bs=1M conv=fsync  (CF/SD/IDE adapter; check the device;",
+        "               use the .hdf, not the .vhd, for raw writes)  [not yet tried on real hardware]",
         "               or copy the install zip's files to the root of an existing partition",
-        "  Needs Kickstart 3.1 (FFS and Workbench 3.1 are 2.0+ only); tested A1200 + KS 3.1",
+        "  Needs Kickstart 3.1 (FFS and Workbench 3.1 are 2.0+ only). Tested in Copperline: A1200 + KS 3.1.",
         "",
-        "Rebuild",
+        "Rebuild and test",
         "  python3 tools/mw2patch.py apply <MWII from disk 1> games/in_progress/Midwinter-2/work/build/MWII_direct",
         "  python3 tools/make_amiga_hd.py",
         "  python3 tools/make_amiga_zip.py            (the install zip)",
-        "  python3 tools/test_hd.py                   (boot + desktop click-through check)",
+        "  python3 -m pytest tests                    (static + emulator tests, ~5 minutes)",
+        "  python3 tools/test_hd_image.py dist/<this>.hdf mw2     (one game from power-on to its in-game view)",
     ]
     lay.write_text("\n".join(lines) + "\n")
     return lay
@@ -251,8 +288,9 @@ def main() -> int:
             raise SystemExit(f"{tool} (amitools) not found")
     out = Path(args.out) if args.out else ROOT / "dist" / f"Amiga_enhanced_games_{dt.date.today():%Y-%m-%d}.hdf"
     report = build(out, BUILD / "MWII_direct")
-    lay = write_layout(out, report)
-    print(f"wrote {out} ({out.stat().st_size} bytes) and {lay.name}")
+    vhd = write_vhd(out)
+    lay = write_layout(out, report, vhd)
+    print(f"wrote {out} ({out.stat().st_size} bytes), {vhd.name} and {lay.name}")
     for r in report:
         print(f"  {r['device']} {r['volume']:<15} {r['mib']:>3} MiB  boot={r['boot']}  {r['files']} files")
     return 0

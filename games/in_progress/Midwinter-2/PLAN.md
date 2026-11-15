@@ -13,35 +13,33 @@ The Amiga program is a different build of the same game: do not copy addresses, 
 ## P0 — Bench (done)
 
 - Repo layout, `.gitignore`, README.
-- `tools/adf.py`, `tools/amigabin.py`, `tools/m68dis.py`, `tools/amigaharness.py`.
-- Skills: `amiga-game-speedup`, `amiga-fs-uae-harness`, `amiga-adf-and-hunks`, `game-delegation`.
+- `tools/adf.py`, `tools/amigabin.py`, `tools/m68dis.py`, `tools/clharness.py` (Copperline).
+- Skills: `amiga-game-speedup`, `amiga-copperline`, `amiga-adf-and-hunks`, `game-delegation`.
 - Disk choice and MD5 sums: `README.md`.
 
 ## P1 — Baseline and boot path (done on A1200)
 
-Status 2026-11-14: the game boots and plays on an emulated A1200 with
-Kickstart 3.1. Use `FSUAE(machine='A1200', disks=[d1, d2, d3])`: df0 starts
-the game, df1/df2 satisfy every "insert graphics/missions disk into any
-drive" prompt with no swapping. The front end needs **held** ~1 s mouse
-presses. Path: RAIDS (281,140) -> difficulty (295,385) -> raid map -> hover
-an island + SPACE -> CAMARGO briefing -> "?" (75,420) -> commander room ->
-thumbs-up (600,45) -> 3D cockpit. Screenshots in `work/shots/`.
+Status 2026-11-15: the game boots and plays on an emulated A1200 with Kickstart 3.1 in
+Copperline, from the hard-disk image and from the three floppies (df0 starts the game, df1/df2
+satisfy every "insert graphics/missions disk into any drive" prompt). The front end needs
+**held** ~1 s mouse presses. Path (game coordinates 0..319 x 0..199): RAIDS (117,56) -> level
+(INTERMEDIATE 120,166) -> click the CAMARGO island (155,170) -> SPACE -> briefing -> "?" (15,177)
+-> thumbs-up (264,16) -> 3D cockpit (~30 s of set-up). Automated: `tools/test_hd_image.py`.
 
 
-Deliverable: `games/in_progress/Midwinter-2/tools/mw2harness.py`, a `FSUAE` subclass with:
-- `boot_to_title()` and `boot_to_game()` using game-state checks (RAM words), not only screenshots;
-- reference screenshots in `work/ref/` (git-ignored): Kickstart screen, startup text, title, cockpit, on-foot;
-- the exact disk-swap sequence, and whether the game runs with `INTRO` skipped;
-- baseline fps on A500 1.3 (fast loop) and on A1200 3.1 when the ROM exists, stock and accelerated (`A1200/1230`);
-- a RAM dump and flat-image map with the **actual load base** on each ROM.
+Deliverable (done, on Copperline): `games/in_progress/Midwinter-2/tools/mw2cl.py` (`MW2(Session)`):
+- `boot()` waits for the hallway by region digest; `to_cockpit()` plays the front end with real mouse counts and held presses;
+- cursor steering closed-loop on the game's own X/Y words (hunk 1 +0x308E/+0x3090);
+- `locate()` finds the steering path in the loaded code hunk by skeleton (no RAM dump);
+- reference states are Copperline save states (`work/states/`, git-ignored) and frame hashes (`tests/goldens.json`).
 
 Facts already known:
 - SPL disk 1 is OFS, volume `program`; `S/startup-sequence` runs `INTRO` then `mwII`.
 - `MWII` is a 4-hunk load file (see README).
 - At 15-50 s on A500 the cracktro runs; skip `INTRO` for tests.
-- FS-UAE debugger works: `m`, `r`, `S <file> <addr> <n>`, `W`, `f`, `c`, `e`, `dm`.
+- Copperline (CCP) gives memory, registers, breakpoints, `loadseg`/`segments.list`, region hashes and save states; see skill `amiga-copperline`.
 
-Acceptance: a cold boot reaches the title and an in-game view, with a screenshot and the state words recorded, on A500 1.3. A1200 blocked until a Kickstart 3.1 ROM is supplied.
+Acceptance: a cold boot reaches the title and an in-game view with the state words recorded. Met on the A1200 with Kickstart 3.1 (Copperline, from the HD image and from floppies); **not yet run on A500/A600** (Kickstart 1.3/2.05 are in `os/Kickstart/`).
 
 ## P2 — Reverse engineering (parallel, read-only)
 
@@ -78,14 +76,13 @@ and the patch survives disk swaps because it lives in the loaded code. See
 
 ## P4 — Timing (measurement open)
 
-2026-11-14: both machine models run at real time in FS-UAE (`timing_baseline.md`:
-525 presented frames / 11.46 s, emulated 1.03x wall, A500 and A1200 alike). That
-shows only that the **emulator** is real-time; it does not distinguish VBL-locked
-logic from a CPU-bound sim (both present 50 fps). The decisive number is world
-time per emulated frame, measured on A500 vs A1200 through the game's own VBL
-counters, with the emulator resumed during every wall window (the paused-dump
-artifact produced three false zeros). The ST scheduler ports only if that test
-shows CPU-bound stepping.
+2026-11-14 (FS-UAE): both machine models presented real time (`timing_baseline.md`), which
+shows only that the **emulator** is real-time; it does not distinguish VBL-locked logic from a
+CPU-bound sim. The decisive number is world time per emulated frame on a slow vs a fast
+machine, through the game's own VBL counters. With Copperline this is now straightforward and
+free of the FS-UAE pause artefacts: `Session.run_to`/`frame()` give exact emulated time,
+`read_w` gives the counters (read as WORD), and `Machine(model=..., cpu=..., cpu_clock=...)`
+selects the machines. The ST scheduler ports only if the test shows CPU-bound stepping.
 
 Mirror the ST design:
 - free-running real-time counter from the level-3 VBL (50 Hz PAL; handle 60 Hz NTSC), independent of the game's counters;
@@ -119,12 +116,17 @@ Every change needs an identical-picture gate and a measured fps gain. No screenm
 
 ## P7 — Release (in progress)
 
-Delivered 2026-11-14: bootable 32 MB hard-disk image (`dist/Amiga_enhanced_games_<date>.hdf`)
-with Workbench 3.1 and the patched game at the volume root, an HDD install zip
-(`dist/Midwinter2-Amiga-hd-<date>.zip`) and `dist/run_hd.sh`; boot-tested from the
-image through the front end into the cockpit. The game must sit in the volume
-root (its own DH0 installer layout). Still to do: the credit line, the cold-boot
-matrix, and single-floppy-drive behaviour with swaps.
+Delivered 2026-11-15 (Copperline; supersedes the 2026-11-14 FS-UAE build): an RDB hard-disk
+image `dist/Amiga_enhanced_games_<date>.hdf` (+ fixed `.vhd`): DH0 Workbench 3.1 (boots to the
+desktop), DH1 `Midwinter2` (patched), DH2 `Midwinter2Orig` (unpatched). Double-click the volume,
+then `Play` (an IconX project icon; the game needs a CLI and the root of its volume). Launchers
+`dist/run_hd.sh`, `dist/run_mw2.sh`, `dist/run_mw2_floppy.sh`. Verified by `python3 -m pytest tests`
+(27 tests: static, VHD, HD boot, bit-exact LoadSeg, desktop click-through, direct-controls gate on the
+patched volume with the unpatched volume as negative control). Found and fixed on the way: RDB
+`MaxTransfer` must be 0x1FE00 or reads past 128 KiB are wrong (the real cause of the Gurus seen
+on HD). The install zip (`tools/make_amiga_zip.py`) is unchanged and not yet re-tested.
+Not verified: real hardware (A1200 CF/IDE), A500/A600 paths. Still to do: the credit line,
+the cold-boot matrix, single-floppy-drive swaps.
 
 
 - ADF set (3 disks) built from the SPL originals; startup sequence replaced: credit line `vX.Y enhanced by dad_prg`, `INTRO` skipped, `mwII` started.

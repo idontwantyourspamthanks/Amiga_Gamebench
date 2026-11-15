@@ -4,6 +4,50 @@ Audience: an agent that has never seen this repo. Every step has the exact comma
 that was seen when it was done (2026-11-14, FS-UAE 3.2.35, A1200, Kickstart 3.1, SPL 3-disk set).
 Run all commands from the repo root `/home/ryan/Code/Amiga/gamebench`.
 
+> **Tooling update 2026-11-15: the emulator is now Copperline.** The measurements, patch design and
+> findings below (§2.2 onwards: skeletons, accumulator semantics, tick tables) are still the record of
+> what the patch does. The *commands* in §0-§3 and §5 that drive FS-UAE (`amigaharness`, `mw2harness`,
+> `mw2probe`, debugger `S`/`W`/`f`) no longer exist; use the section below. FS-UAE-specific traps
+> (every debugger call pauses the game; `fd` removes one breakpoint; `W` writes a byte; mouse regrab)
+> do not apply to Copperline: the machine advances only inside `run_*` calls and `mem.write` is exact.
+
+## Copperline quick start (works as written)
+
+Everything below is exercised by `tests/test_mw2_direct_controls.py` (`python3 -m pytest tests/test_mw2_direct_controls.py`).
+
+```python
+import sys; sys.path[:0] = ['tools', 'games/in_progress/Midwinter-2/tools']
+import struct, mw2cl
+from clharness import Machine
+
+# real boot path: a scratch copy of the image whose S:User-Startup starts the game ('mw2' patched, 'mw2orig' original)
+g = mw2cl.MW2.from_image('dist/Amiga_enhanced_games_<date>.hdf', game='mw2')
+g.boot()                       # ~75 emulated s: waits for the hallway by region digest
+g.to_cockpit()                 # RAIDS -> level -> island -> briefing -> thumbs-up (held 1 s presses)
+g.save_state('/tmp/cockpit.clstate')            # later: a fresh MW2(Machine(ide=<same scratch image>)).load_state(...)
+
+a = g.locate()                 # live addresses by skeleton in the loaded code hunk (never reuse them across runs)
+# a['patched'], a['acc'] (long: hi word = half-counts since the last tick), a['out'], a['gate'],
+# a['store_pc'] (the blob's `move.w d0,out`), a['heading'] (= acc - 0xFF0, 1024 = 360 degrees)
+
+# consume-and-clear, tick exact: poke the accumulator, stop where the turn value is stored, read D0
+g.write(a['acc'], struct.pack('>i', 20 << 16))
+bp = g.break_pc(a['store_pc']); g.run_to(g.now() + 5)
+print(g.regs()['d'][0] & 0xFFFF)                 # 60  (3 per half-count; capped at +-1000)
+g.unbreak(bp); print(g.read_l(a['acc']))         # 0   (consumed)
+
+# real input path: relative mouse counts, then watch the heading stop
+for _ in range(10): g.mouse(dx=8); g.run_frames(2)
+g.run_for(2); h1 = g.read_w(a['heading']); g.run_for(4); assert g.read_w(a['heading']) == h1
+
+# joystick mode J: gates are words at a['gate'] (mouse), -4 (joystick), -2 (keys)
+G = a['gate']; g.write_w(G, 0); g.write_w(G - 4, 0xFFFF); g.write_w(G - 2, 0)
+g.joy(port=2, left=True)                         # turn value -200 on every tick while held, 0 after release
+```
+
+The unpatched volume (`game='mw2orig'`) is the negative control: `locate()['patched']` is False, a poked
+accumulator stays (clamped to 500) and the view keeps turning.
+
 What was built: **direct steering**, the counterpart of the Atari ST `p5_ctl_*` patches.
 - Mouse (`M`): the view turns in proportion to mouse motion since the previous logic tick and
   stops when the mouse stops. No persistent "yoke".

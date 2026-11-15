@@ -1,8 +1,8 @@
 # Midwinter II: Flames of Freedom — Amiga
 
-*Midwinter II: Flames of Freedom*, Rainbird, 1991 (Amiga release 1.7, 7 September 1991). Port of the finished Atari ST work in `AtariST/gamebench/games/done/midwinter2`: same behaviour, Amiga implementation, **floppy-only**, targeting a fast **Amiga 1200**.
+*Midwinter II: Flames of Freedom*, Rainbird, 1991 (Amiga release 1.7, 7 September 1991). Port of the finished Atari ST work in `AtariST/gamebench/games/done/midwinter2`: same behaviour, Amiga implementation, targeting a fast **Amiga 1200** (shipped as a hard-disk image; the floppy set is still supported).
 
-Status: **disks chosen; port not started.** The bench, tools and harness are in place. The plan is [`PLAN.md`](PLAN.md).
+Status (2026-11-15): **direct controls done and gated; the game boots and plays on an emulated A1200 / Kickstart 3.1 from a hard-disk image and from three floppies** (Copperline). Open: world-rate (VBL-locked vs CPU-bound), rendering, credit line, A500/A600 runs, real-hardware test. See [`PLAN.md`](PLAN.md), the top-level README (run, build, test) and `tests/`.
 
 ## Chosen release: the three-disk SPL set
 

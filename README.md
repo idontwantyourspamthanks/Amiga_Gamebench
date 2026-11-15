@@ -2,90 +2,111 @@
 
 **Speeding up and modernising classic Amiga games by patching them, without their source code.**
 
-This is the Amiga counterpart of [`AtariST/gamebench`](../../AtariST/gamebench). It holds the tools, the patches and the working notes. It does **not** contain any game, any Kickstart ROM, or anything extracted from them; you supply your own copies.
+This is the Amiga counterpart of [`AtariST/gamebench`](../../AtariST/gamebench): tools, patches, tests and working notes, plus an all-games hard-disk image in which each game is a volume you open and run. It does **not** contain any game, Kickstart ROM or anything extracted from them; you supply your own copies.
 
-Current work: **Midwinter II: Flames of Freedom** (1991, Rainbird), targeting a fast **Amiga 1200** from **floppy disks only**. The Atari port of the same game is done: see `AtariST/gamebench/games/done/midwinter2`. The goal here is the same behaviour:
+Current work: **Midwinter II: Flames of Freedom** (1991, Rainbird) on a fast **Amiga 1200**. The Atari port of the same game is done (`AtariST/gamebench/games/done/midwinter2`). The goal here is the same behaviour:
 
-- the world runs at its original 5 Hz whatever the CPU speed, so accelerators do not make the game run fast;
-- **direct controls**: the mouse turns the view by its motion and stops when it stops; the joystick/keys turn at a constant rate while held and stop on release, instead of the original "yoke" that keeps a turn rate;
-- faster drawing with an identical picture, and no redraw when nothing changed;
-- a floppy-only release that boots on a real A1200, shows a version credit, and leaves the originals untouched.
+- the world runs at its original rate whatever the CPU speed;
+- **direct controls**: the mouse turns the view by its motion and stops when it stops; joystick/keys turn at a constant rate while held and stop on release (no "yoke");
+- faster drawing with an identical picture;
+- a release that runs on a real A1200, shows a version credit (`vX.Y enhanced by dad_prg`), and leaves the originals untouched.
 
-Nothing in this repository is a game file. The patch tools verify every original byte they replace and refuse to build against anything else.
+Every patch tool verifies each original byte it replaces and refuses to build against anything else.
+
+## Emulator: Copperline
+
+All emulation, navigation, measurement and testing uses [Copperline](https://copperline.dev) (deterministic, headless, JSON-RPC control). `tools/fetch_copperline.sh` installs it into `tools/bin/`. Headless runs need no display server and run unthrottled (a 30 s Workbench boot takes about 6 s). The harness is `tools/clharness.py`; the method is in `.omp/skills/amiga-copperline/SKILL.md`.
 
 ## Status
 
 | Item | State |
 |---|---|
-| Bench (layout, ADF/hunk tools, disassembler, FS-UAE harness, skills) | built |
-| Kickstart ROMs | 1.3, 2.05, 3.1 (A1200 and A600) present in `os/Kickstart/`; A1200 3.1 boots the game |
-| Disk versions | chosen and documented in `games/in_progress/Midwinter-2/README.md` |
-| Midwinter II port | **boots and plays on A1200 3.1**: three drives, held-press menu, in-game cockpit (`work/shots/mw2_ingame_a1200.png`); play launcher `dist/run_mw2.sh`; in-game input is joystick/keyboard; **direct controls done**: mouse turns in proportion to motion and stops, joystick/keys turn at a constant rate while held (`patches/p5_direct.s`, `tools/mw2patch.py`, built into `work/build/d1_direct.adf`, measured live; method in `games/in_progress/Midwinter-2/work/notes/direct_controls_howto.md`). Open: whether the world clock is VBL-locked or CPU-bound — emulator real-time parity is measured, the game-counter A1200-vs-A500 test is not yet valid (`work/notes/timing_baseline.md`) |
+| Bench: ADF/hunk tools, disassembler, Copperline harness, skills | built |
+| Hard-disk image (RDB: Workbench 3.1 + one volume per game) and fixed VHD | built; boots to the Workbench desktop |
+| Tests | `python3 -m pytest tests`: 27 pass (static, VHD, HD boot, bit-exact load, desktop click-through, direct-controls gate) |
+| Midwinter II on A1200 / KS 3.1 | boots and plays from the HD image and from three floppies |
+| Direct controls | done and gated tick by tick (`patches/p5_direct.s`, `tools/mw2patch.py`, `tests/test_mw2_direct_controls.py`); method in `games/in_progress/Midwinter-2/work/notes/direct_controls_howto.md` |
+| World rate (VBL-locked or CPU-bound?) | open: needs the Copperline measurement (`PLAN.md` P4) |
+| Rendering, credit line, A500/A600 runs, real-hardware test | not started / not verified |
 | Midwinter (1) | disks collected; not started |
 
-## Machines and targets
+## Run a game
 
-The user's standing preferences, carried over from the Atari project:
+```sh
+tools/fetch_copperline.sh                 # once
+python3 tools/mw2patch.py apply <MWII from disk 1> games/in_progress/Midwinter-2/work/build/MWII_direct   # once
+python3 tools/make_amiga_hd.py            # dist/Amiga_enhanced_games_<date>.hdf + .vhd + .layout.txt
 
-- **Target: a fast Amiga 1200** — 68020/68030, AGA, 2 MB chip RAM plus fast RAM, Kickstart 3.1, booting from floppy.
-- Nothing may break on a plain A500/A600 (OCS/ECS, 68000, Kickstart 1.3/2.04) where the original works. A500/A500+ runs are the fast regression loop while the A1200 ROM is unavailable; they are **not** evidence about A1200 behaviour.
-- **Pixel-identical by default.** Any visual tradeoff needs before/after screenshots and explicit approval.
-- **Direct controls** as described above.
-- **Deliverables:** patched copies, never modified originals; a patch tool that verifies original bytes; floppy images; `play.sh`-style launchers; a version and credit line (`vX.Y enhanced by dad_prg`) visible at startup and in the README and image names.
+dist/run_hd.sh                            # Workbench desktop; open Midwinter2, double-click Play
+dist/run_mw2.sh                           # straight into Midwinter II (scratch copy: saves not kept)
+dist/run_mw2_floppy.sh                    # the three-floppy set
+dist/run_hd.sh mw2orig                    # the unpatched game, for comparison
+```
+Options: `--model A600|A500`, `--cpu 68030 --clock 50`, `--scale 3`, `--image FILE`, `--no-warp`.
+
+## The hard-disk image
+
+An RDB disk (so it mounts in emulators and on real hardware), geometry 16 heads x 63 sectors:
+
+| dev | volume | contents |
+|---|---|---|
+| DH0 | Workbench | Workbench 3.1 (bootable), `ReadMe.txt` |
+| DH1 | Midwinter2 | patched game at the volume root + `Play` |
+| DH2 | Midwinter2Orig | the unpatched game + `Play` |
+
+- Each game has its own volume: it only runs from the **root** of its volume.
+- `Play` is a script behind an IconX project icon: the game needs a CLI process (started as a Workbench tool it Gurus).
+- **Every partition has `MaxTransfer = 0x1FE00`.** With the default the A1200's IDE path returns wrong data for reads over 128 KiB and the game crashes at start. `tests/` guards this.
+- Adding a game = a `Part(...)` and a `stage_*` function in `tools/make_amiga_hd.py`, an entry in `tools/amigahd.py` `GAMES`, and a game harness (see the skill).
+- The shipped image is never touched by tests or `run_hd.sh GAME`: they boot a scratch copy whose `S:User-Startup` starts the game (`tools/amigahd.py scratch`).
+
+`dist/Midwinter2-Amiga-hd-<date>.zip` (`tools/make_amiga_zip.py`) is the install-into-your-own-partition alternative.
+
+## Tests
+
+```sh
+python3 -m pytest tests -m "not emu"      # static: config, icon format, image structure, patch verify, VHD (seconds)
+python3 -m pytest tests                   # + emulator: real boots (about 5 minutes)
+python3 tools/test_hd_image.py dist/<image>.hdf mw2     # one game, power-on to cockpit, one RESULT line
+python3 -m pytest tests --bless           # re-record goldens (frame hashes) after an intended change
+```
+Goldens are frame hashes in `tests/goldens.json` (no pictures are committed) and are valid for the emulator version and image they were recorded with.
 
 ## Layout
 
 | Path | What |
 |---|---|
-| `tools/amigaharness.py` | Headless FS-UAE harness. Private Xvfb display per instance, screenshots, keyboard/mouse, the UAE console debugger (`m`, `S`, `W`, `f`, `c`, `e`), frame statistics. |
-| `tools/adf.py` | ADF images: track/sector access, bootblock validation, `xdftool` file listing/unpack, sector-level diffs. |
-| `tools/amigabin.py` | Amiga hunk load files: parse, list segments and relocations, build a flat image with relocations resolved, at a chosen base. |
-| `tools/m68dis.py` | 68000/68020 disassembler for flat images and RAM dumps, with call labels, xrefs and Amiga hardware-register annotations. |
-| `kickstarts/` | Your Kickstart ROMs (git-ignored). `kickstarts/README.md` lists the expected names. |
-| `os/` | Workbench/Extras disk images for building boot disks and testing (git-ignored). |
-| `.omp/skills/` | Method, harness, ADF/hunk and delegation notes for the agent. |
-| `games/in_progress/<game>/` | One folder per game: chosen disks, README, PLAN, `work/notes/`. |
+| `tools/clharness.py` | Copperline harness: `Machine` (config), `capture` (scheduled headless runs), `Session` (control protocol) |
+| `tools/clrun.py` | what `dist/run_*.sh` call: build a config and start Copperline windowed |
+| `tools/make_amiga_hd.py`, `amigahd.py`, `amigaicon.py` | build the RDB image + VHD; scratch copies with an autorun; Workbench `.info` writer |
+| `tools/test_hd_image.py` | boot one game from the image to its in-game view |
+| `tools/adf.py`, `amigabin.py`, `m68dis.py` | ADF images, hunk load files, 68k disassembler |
+| `tools/fetch_copperline.sh` | install Copperline into `tools/bin/` (git-ignored) |
+| `tests/` | pytest suite and `goldens.json` |
+| `games/in_progress/<game>/` | per-game README, PLAN, `patches/`, `tools/` (game harness, patch tool), `work/notes/` |
+| `kickstarts/`, `os/` | your Kickstart ROMs and Workbench disks (git-ignored) |
+| `.omp/skills/` | method, Copperline, ADF/hunk and delegation notes for the agent |
 
 ## Requirements
 
-- Linux, Python 3.10+, `fs-uae` 3.2+ (Ubuntu package is fine), `Xvfb`, `xdotool`, ImageMagick (`import`).
-- Python `capstone` (disassembly) and `amitools` (`xdftool`, filesystem access).
-- `vasmm68k_mot` (vasm, Motorola syntax) for assembling patches.
-- Your own Kickstart ROMs in `kickstarts/`.
+- Linux, Python 3.10+, `pytest`; Copperline (fetched by the script above; no Vulkan/display needed headless, a window needs Vulkan).
+- `amitools` (`xdftool`, `rdbtool`), `vasmm68k_mot` (patch assembly), Python `capstone`, `numpy`/`Pillow` for some tools.
+- Your own Kickstart ROMs (`os/Kickstart/`; 3.1 for the A1200 target).
 
-## Quick start
+## Machines and targets
 
-```sh
-python3 tools/amigaharness.py roms                  # what ROMs are available, what is missing
-python3 tools/amigaharness.py run --machine A500 --seconds 20 --screenshot /tmp/shot.png \
-    games/in_progress/Midwinter-2/originals/'...Disk 1 of 3...[cr SPL].adf'
-python3 tools/adf.py info  <disk.adf>               # bootblock + filesystem summary
-python3 tools/adf.py diff  <a.adf> <b.adf>          # sector-level changes only
-```
+- **Target: a fast Amiga 1200** (68020/030, AGA, Kickstart 3.1).
+- Nothing may break on a plain A500/A600 where the original works. This is **not yet tested**; Copperline models them (`--model A500|A600`).
+- **Pixel-identical by default**; visual tradeoffs need before/after pictures and approval.
+- **Deliverables:** patched copies, never modified originals; a verifying patch tool; images and launchers; the version credit line.
 
 ## Getting the game files
 
-The chosen Midwinter II release is the three-disk SPL set (program / graphics / missions). Put your own copies in `games/in_progress/Midwinter-2/originals/`; the folder is git-ignored. The per-game README lists MD5 sums and why that release was chosen.
+The chosen Midwinter II release is the three-disk SPL set. Put your copies in `games/in_progress/Midwinter-2/originals/` (git-ignored); the per-game README lists MD5 sums.
 
 ## Credits and legal
 
 - *Midwinter* and *Midwinter II: Flames of Freedom* are © Maelstrom Games / Rainbird / MicroProse.
 - Kickstart and Workbench are © Commodore/Cloanto. None are included here.
+- Copperline is GPL-3.0-or-later (https://copperline.dev); it is downloaded, not bundled.
 - The code and documentation in this repository are released under the MIT licence (see `LICENSE`).
-
-## Hard-disk builds
-
-The game also runs from a hard disk, which is how the enhanced releases are shipped
-now (floppy only remains supported through the ADFs). Two artefacts, both git-ignored
-because they contain game data:
-
-| artefact | how to build | what it is |
-|---|---|---|
-| `dist/Midwinter2-Amiga-hd-<date>.zip` | `python3 tools/make_amiga_zip.py` | the patched game plus an AmigaDOS `MW2Install` script; unpack into the root of any hard-disk partition |
-| `dist/Amiga_enhanced_games_<date>.hdf` | `python3 tools/make_amiga_hd.py` | a 32 MB bootable FFS hardfile: Workbench 3.1 + the patched game at the volume root + `S/User-Startup` that starts it |
-
-`dist/run_hd.sh` boots the newest image in FS-UAE (A1200, Kickstart 3.1). The
-build script also writes the unpatched executable to `ORIG/` for comparison.
-
-**The game must live in the root of its volume** - that is what its own `DH0`
-installer does; in a sub-drawer it stops at the "insert graphics disk" prompt.

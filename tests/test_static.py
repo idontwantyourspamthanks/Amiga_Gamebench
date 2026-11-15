@@ -115,3 +115,19 @@ def test_patched_exe_differs_from_original_only_where_intended(patched_exe, tmp_
     r = subprocess.run(["python3", str(ROOT / "tools/mw2patch.py"), "verify", str(orig), str(patched_exe)],
                        capture_output=True, text=True)
     assert r.returncode == 0 and "verify: OK" in r.stdout, r.stdout + r.stderr
+
+
+def test_vhd_is_the_same_disk_with_a_valid_fixed_footer(image):
+    vhd = image.with_suffix(".vhd")
+    if not vhd.exists():
+        pytest.skip("no .vhd next to the image")
+    raw, v = image.read_bytes(), vhd.read_bytes()
+    assert v[:-512] == raw
+    f = bytearray(v[-512:])
+    assert f[:8] == b"conectix"
+    size, cur = struct.unpack(">QQ", f[40:56])
+    assert size == cur == len(raw)
+    assert struct.unpack(">I", f[60:64])[0] == 2                      # fixed disk
+    stored = struct.unpack(">I", f[64:68])[0]
+    f[64:68] = bytes(4)
+    assert stored == (~sum(f)) & 0xFFFFFFFF
