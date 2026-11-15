@@ -50,6 +50,8 @@ m = Machine(model="A1200", ide="dist/Amiga_enhanced_games_<date>.hdf")   # A1200
 - Reading registers: `regs()["d"]`/`["a"]` are lists of 8 ints; `pc`, `sr` are plain.
 - (from the docs, not exercised here) `[ide] slave` only works with Kickstart 3.1.4+. Boot partition priority is in the RDB; `bootpri` applies to bare HDFs and host folders only.
 - HOSTFS (`filesys`) volumes boot Workbench (`bootpri=6`) and are handy for experiments, but they are not the shipped path; test the real RDB image.
+- Pick one mode per run: a `--control` session (`Session`) owns the run loop and cannot be combined with `--screenshot-after`/`--expect-screenshot`/scheduled input flags (use `capture.screenshot`, `input.*`, `state.*` instead); the one-shot `capture()` cannot be driven interactively. (docs, consistent with how both layers behave here)
+- (docs) Never use `[cpu] jit` / `--jit` for gates or timing: it is not cycle-exact or reproducible, and any debug hook drops it back to the precise loop. For a "fast A1200" use `Machine(cpu="68030", cpu_clock=...)` (the clock is rounded to a whole multiple of the colour clock; fast RAM runs at the CPU clock, chip RAM stays chip-bus bound). Not exercised yet here.
 
 ## Test suite and launchers
 - `python3 -m pytest tests -m "not emu"` (static, seconds); `python3 -m pytest tests` (everything, ~5 min). The `cockpit(game)` fixture boots a scratch copy once, saves a state, and each test restores it into a fresh emulator: results are exact and tests independent. `--bless` rewrites `tests/goldens.json` (frame hashes only).

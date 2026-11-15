@@ -23,7 +23,7 @@ All emulation, navigation, measurement and testing uses [Copperline](https://cop
 |---|---|
 | Bench: ADF/hunk tools, disassembler, Copperline harness, skills | built |
 | Hard-disk image (RDB: Workbench 3.1 + one volume per game) and fixed VHD | built; boots to the Workbench desktop |
-| Tests | `python3 -m pytest tests`: 27 pass (static, VHD, HD boot, bit-exact load, desktop click-through, direct-controls gate) |
+| Tests | `python3 -m pytest tests` passes (static, VHD, HD boot, bit-exact load, desktop click-through, direct-controls gate; about 5 minutes) |
 | Midwinter II on A1200 / KS 3.1 | boots and plays from the HD image and from three floppies |
 | Direct controls | done and gated tick by tick (`patches/p5_direct.s`, `tools/mw2patch.py`, `tests/test_mw2_direct_controls.py`); method in `games/in_progress/Midwinter-2/work/notes/direct_controls_howto.md` |
 | World rate (VBL-locked or CPU-bound?) | open: needs the Copperline measurement (`PLAN.md` P4) |
@@ -55,7 +55,7 @@ An RDB disk (so it mounts in emulators and on real hardware), geometry 16 heads 
 | DH2 | Midwinter2Orig | the unpatched game + `Play` |
 
 - Each game has its own volume: it only runs from the **root** of its volume.
-- `Play` is a script behind an IconX project icon: the game needs a CLI process (started as a Workbench tool it Gurus).
+- `Play` is a script behind an IconX project icon. Started as a plain Workbench tool the game Gurus (`87000004`); launched from a CLI context (a `Play` script, or `S:User-Startup`) it runs. Whether the cause is the missing CLI or the tool icon's stack size was not isolated.
 - **Every partition has `MaxTransfer = 0x1FE00`.** With the default the A1200's IDE path returns wrong data for reads over 128 KiB and the game crashes at start. `tests/` guards this.
 - Adding a game = a `Part(...)` and a `stage_*` function in `tools/make_amiga_hd.py`, an entry in `tools/amigahd.py` `GAMES`, and a game harness (see the skill).
 - The shipped image is never touched by tests or `run_hd.sh GAME`: they boot a scratch copy whose `S:User-Startup` starts the game (`tools/amigahd.py scratch`).

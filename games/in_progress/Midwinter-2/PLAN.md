@@ -1,6 +1,6 @@
 # Midwinter II (Amiga): port plan
 
-Goal: reproduce the finished Atari ST behaviour on the Amiga release, for a fast **Amiga 1200**, **floppy only**, without source code.
+Goal: reproduce the finished Atari ST behaviour on the Amiga release, for a fast **Amiga 1200**, without source code. Delivery is a hard-disk image (see P7); the three-floppy set remains supported. (Earlier revisions of this plan said "floppy only"; the user has since moved to HD delivery, the ST precedent.)
 
 The reference implementation and its evidence are `AtariST/gamebench/games/done/midwinter2`:
 - timing: `patches/tick_vbl.s`, `p3cp_head.s`, `p3c_sim.s`, `p3c_render.s`; notes `simtiming.md`, `frameloop.md`, `tick_inventory.md`, `vehicles_p3b.md`;
@@ -119,9 +119,9 @@ Every change needs an identical-picture gate and a measured fps gain. No screenm
 Delivered 2026-11-15 (Copperline; supersedes the 2026-11-14 FS-UAE build): an RDB hard-disk
 image `dist/Amiga_enhanced_games_<date>.hdf` (+ fixed `.vhd`): DH0 Workbench 3.1 (boots to the
 desktop), DH1 `Midwinter2` (patched), DH2 `Midwinter2Orig` (unpatched). Double-click the volume,
-then `Play` (an IconX project icon; the game needs a CLI and the root of its volume). Launchers
+then `Play` (an IconX project icon: a plain tool icon Gurus, a CLI-context launch works; the game also needs the root of its volume). Launchers
 `dist/run_hd.sh`, `dist/run_mw2.sh`, `dist/run_mw2_floppy.sh`. Verified by `python3 -m pytest tests`
-(27 tests: static, VHD, HD boot, bit-exact LoadSeg, desktop click-through, direct-controls gate on the
+(static, VHD, HD boot, bit-exact LoadSeg, desktop click-through, direct-controls gate on the
 patched volume with the unpatched volume as negative control). Found and fixed on the way: RDB
 `MaxTransfer` must be 0x1FE00 or reads past 128 KiB are wrong (the real cause of the Gurus seen
 on HD). The install zip (`tools/make_amiga_zip.py`) is unchanged and not yet re-tested.

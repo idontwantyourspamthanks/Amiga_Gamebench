@@ -61,7 +61,7 @@ Reference for the behaviour and the gates: `AtariST/gamebench/games/done/midwint
 - **Kickstart version changes the load address** of the executable and free RAM. Check each ROM (1.3, 2.0x, 3.1) with `segments.list`.
 - **68020 cache and alignment.** The 68000 has none; the 68020 does. Patched-in code and self-modifying routines may need `CINVA`.
 - **AGA/ECS differences.** OCS/ECS games run in compatibility modes; a "fast A1200" also means PAL 50 Hz; Kickstart 3.1's default screen is 640x256.
-- **A game may need a CLI, a volume root and a safe transfer size.** Midwinter II Gurus when started as a Workbench tool, only runs from the root of its volume, and the RDB `MaxTransfer` must be 0x1FE00 (see `amiga-adf-and-hunks`).
+- **A game may need a CLI context, a volume root and a safe transfer size.** Midwinter II Gurus when started from a plain Workbench tool icon (CLI vs icon stack not isolated), only runs from the root of its volume, and the RDB `MaxTransfer` must be 0x1FE00 (see `amiga-adf-and-hunks`).
 - **Copperline's default ROM is AROS, not Kickstart.** `Machine` always passes the 3.1 ROM from `os/Kickstart/`; never gate on AROS behaviour.
 - **Floppy delivery:** disk swaps and `LoadSeg` overlays are part of the original design; do not break volume names or the loader. The SPL program disk has ~241 KB free.
 - **Kickstart 3.1 AmigaDOS** may add assigns/patches absent on 1.3; test the exact startup sequence you ship.

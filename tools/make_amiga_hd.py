@@ -115,10 +115,10 @@ PLAY_ICON_TEMPLATE = "System/Shell.info"      # a project icon from Workbench 3.
 def stage_play(stage: Path, src: Path, volume: str) -> None:
     """`Play` + `Play.info`: double-click starts the game.
 
-    mwII needs a CLI process (the floppy boot runs it from a startup-sequence); started
-    directly as a Workbench tool it dies with a Guru.  A project icon whose default tool
-    is C:IconX runs the script in a CLI, and the script CDs to the volume root first (the
-    game only works from the root of its volume).
+    Started directly as a Workbench tool (a plain tool icon) mwII dies with a Guru; run from a
+    CLI (the floppy boot's startup-sequence, S:User-Startup, or this script) it works.  Cause
+    (no CLI vs the icon's stack) was not isolated.  A project icon whose default tool is
+    C:IconX runs the script, which CDs to the volume root first (the game only works there).
     """
     (stage / "Play").write_text(f"CD {volume}:\nmwII\n")
     wb = next(p for p in (src / "wb").iterdir() if p.is_dir())
@@ -250,8 +250,8 @@ def write_layout(out: Path, report: list[dict], vhd: Path) -> Path:
         "",
         "Boots to the Workbench 3.1 desktop (DH0). Each game is its own volume: open it and",
         "double-click Play (a script run by C:IconX), or from a Shell:  CD Midwinter2:  then  mwII",
-        "The game only runs from the ROOT of its volume (its own DH0 installer's layout) and",
-        "needs a CLI process, hence the Play script rather than a bare tool icon.",
+        "The game only runs from the ROOT of its volume (its own DH0 installer's layout);",
+        "started as a bare tool icon mwII Gurus, while the Play script (a CLI context) runs it.",
         "MaxTransfer is 0x1FE00 on every partition: with a larger value the A1200's IDE path",
         "returns wrong data for reads over 128 KiB and mwII crashes at start.",
         "",

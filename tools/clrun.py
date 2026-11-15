@@ -17,7 +17,8 @@ from __future__ import annotations
 
 import argparse
 import glob
-import os
+import shutil
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -83,19 +84,22 @@ def main(argv=None) -> int:
             raise SystemExit("floppy sets: mw2")
         m.floppies = floppy_set(a.original)
 
-    cfg = m.write_config(tmp / "machine.toml")
-    if a.print_config:
-        print(cfg.read_text())
-        return 0
-    if a.shot:
-        secs, png = float(a.shot[0]), a.shot[1]
-        r = capture(m, Schedule().shot(secs, png))
-        print(f"rc={r.returncode} wall={r.wall:.0f}s -> {png}")
-        return r.returncode
-    cmd = [copperline_bin(), "--config", str(cfg), "--window-scale", str(a.scale)]
-    if not a.no_warp and a.kind == "hd":
-        cmd.append("--warp-boot")                 # unpaced until the boot storage goes idle, then real time
-    os.execv(cmd[0], cmd)
+    try:
+        cfg = m.write_config(tmp / "machine.toml")
+        if a.print_config:
+            print(cfg.read_text())
+            return 0
+        if a.shot:
+            secs, png = float(a.shot[0]), a.shot[1]
+            r = capture(m, Schedule().shot(secs, png))
+            print(f"rc={r.returncode} wall={r.wall:.0f}s -> {png}")
+            return r.returncode
+        cmd = [copperline_bin(), "--config", str(cfg), "--window-scale", str(a.scale)]
+        if not a.no_warp and a.kind == "hd":
+            cmd.append("--warp-boot")             # unpaced until the boot storage goes idle, then real time
+        return subprocess.call(cmd)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)    # the scratch image copy (28 MB) must not outlive the run
 
 
 if __name__ == "__main__":
