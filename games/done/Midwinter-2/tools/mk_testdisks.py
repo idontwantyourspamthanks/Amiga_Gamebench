@@ -14,7 +14,7 @@ The patch is six bytes at INTRO's code offset $102
 (`move.l $dff004,d0` -> `bra.w $16e` + nop). It is PC-relative, so it works at
 whatever address LoadSeg chooses.
 
-    python3 games/in_progress/Midwinter-2/tools/mk_testdisks.py
+    python3 games/done/Midwinter-2/tools/mk_testdisks.py
 
 Original disks are never modified. Output goes to work/build/ (git-ignored).
 """
@@ -60,16 +60,16 @@ def main() -> int:
     shutil.copyfile(src, out)
 
     with tempfile.TemporaryDirectory(prefix="mw2intro-") as tmp:
-        adf.xdftool(str(out), f"unpack / {tmp}")
-        intro = Path(tmp) / INTRO_RENAME
+        adf.xdftool(str(out), "unpack", tmp)
+        intro = next(Path(tmp).rglob(INTRO_RENAME))
         data = bytearray(intro.read_bytes())
         if data[INTRO_FILE_OFFSET:INTRO_FILE_OFFSET + 6] != INTRO_ORIG:
             raise SystemExit("INTRO: unexpected bytes at code offset $102; refusing to patch")
         data[INTRO_FILE_OFFSET:INTRO_FILE_OFFSET + 6] = INTRO_PATCH
         intro.write_bytes(data)
 
-        adf.xdftool(str(out), "delete INTRO", readonly=False)
-        adf.xdftool(str(out), f"write {intro} INTRO", readonly=False)
+        adf.xdftool(str(out), "delete", "INTRO", readonly=False)
+        adf.xdftool(str(out), "write", str(intro), "INTRO", readonly=False)
 
     # Only the INTRO file's sectors and the filesystem metadata may change.
     print(f"built {out}  md5 {md5(out)}")

@@ -92,7 +92,7 @@ def test_game_volumes_have_play_launchers(image, tmp_path):
         part = tmp_path / f"{dev}.hdf"
         subprocess.run(["rdbtool", str(image), "export", dev, str(part)], check=True, capture_output=True)
         script = subprocess.run(["xdftool", str(part), "type", "Play"], capture_output=True, text=True, check=True).stdout
-        assert script.split() == ["CD", f"{vol}:", "mwII"]
+        assert script.split()[-1] == "mwII" and "enhanced by dad_prg" in script and "CD" not in script.split()
         subprocess.run(["xdftool", str(part), "read", "Play.info", str(tmp_path / "p.info")], check=True, capture_output=True)
         ic = amigaicon.Icon.parse((tmp_path / "p.info").read_bytes())
         assert ic.type == amigaicon.WBPROJECT and ic.default_tool == "C:IconX"
@@ -100,14 +100,14 @@ def test_game_volumes_have_play_launchers(image, tmp_path):
 
 @pytest.fixture(scope="module")
 def patched_exe():
-    p = ROOT / "games/in_progress/Midwinter-2/work/build/MWII_direct"
+    p = ROOT / "games/done/Midwinter-2/work/build/MWII_direct"
     if not p.exists():
         pytest.skip("patched MWII not built (tools/mw2patch.py apply)")
     return p
 
 
 def test_patched_exe_differs_from_original_only_where_intended(patched_exe, tmp_path):
-    orig_adf = next((ROOT / "games/in_progress/Midwinter-2/originals").glob("*Disk 1 of 3*SPL*.adf"), None)
+    orig_adf = next((ROOT / "games/done/Midwinter-2/originals").glob("*Disk 1 of 3*SPL*.adf"), None)
     if orig_adf is None:
         pytest.skip("original disk 1 not available")
     orig = tmp_path / "MWII_orig"

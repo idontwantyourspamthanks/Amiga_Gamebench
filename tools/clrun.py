@@ -28,7 +28,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 import amigahd  # noqa: E402
 from clharness import Machine, Schedule, capture, copperline_bin  # noqa: E402
 
-MW2 = ROOT / "games/in_progress/Midwinter-2"
+MW2 = ROOT / "games/done/Midwinter-2"
 
 
 def newest_image() -> Path:
@@ -47,7 +47,7 @@ def floppy_set(original: bool) -> list[Path]:
     if not original and patched.exists():
         d1 = patched
     if not (d1 and d2 and d3):
-        raise SystemExit("Midwinter II disks not found under games/in_progress/Midwinter-2/originals")
+        raise SystemExit("Midwinter II disks not found under games/done/Midwinter-2/originals")
     return [d1, d2, d3]
 
 

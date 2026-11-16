@@ -313,7 +313,7 @@ The menu is driven by **held** mouse presses, not clicks. With a 1 s hold:
 
 A quick click is missed by the front end's VBL sampler (`$17B1E`); a 1 s press
 always registers. All of this is now scripted in
-`games/in_progress/Midwinter-2/tools/mw2harness.py`.
+`games/done/Midwinter-2/tools/mw2harness.py`.
 
 ## No disk swapping needed: mount all three drives (2026-11-14)
 

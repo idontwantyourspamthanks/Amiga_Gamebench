@@ -1,6 +1,6 @@
-Amiga_enhanced_games_2026-11-15.hdf  (28385280 bytes, RDB disk, md5 c51cd531f762a170e6267ef3fbea32bf)
-Amiga_enhanced_games_2026-11-15.vhd  (28385792 bytes, fixed VHD of the same disk, md5 a33f15a215e3a422bd2b6d655387adda)
-built 2026-11-15 by tools/make_amiga_hd.py from the current patched builds
+Amiga_enhanced_games_2026-11-16.hdf  (28385280 bytes, RDB disk, md5 88a3a061547855f6a82f518792abfd55)
+Amiga_enhanced_games_2026-11-16.vhd  (28385792 bytes, fixed VHD of the same disk, md5 03ff2db6698d77a4c8863359e178fc53)
+built 2026-11-16 by tools/make_amiga_hd.py from the current patched builds
 
 Partition table (RDB, geometry 16 heads x 63 sectors, all DOS\1 = FFS)
   dev  volume           size    boot  files
@@ -25,7 +25,7 @@ Use
   Needs Kickstart 3.1 (FFS and Workbench 3.1 are 2.0+ only). Tested in Copperline: A1200 + KS 3.1.
 
 Rebuild and test
-  python3 tools/mw2patch.py apply <MWII from disk 1> games/in_progress/Midwinter-2/work/build/MWII_direct
+  python3 tools/mw2patch.py apply <MWII from disk 1> games/done/Midwinter-2/work/build/MWII_direct
   python3 tools/make_amiga_hd.py
   python3 tools/make_amiga_zip.py            (the install zip)
   python3 -m pytest tests                    (static + emulator tests, ~5 minutes)

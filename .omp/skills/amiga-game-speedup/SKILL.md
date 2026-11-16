@@ -5,7 +5,7 @@ description: Method for speeding up and modernising a closed-source Amiga game b
 
 # Speeding up an Amiga game (method)
 
-Reference for the behaviour and the gates: `AtariST/gamebench/games/done/midwinter2` (Atari ST). This skill records what carries over and what is genuinely Amiga-specific. The Amiga work is at `games/in_progress/Midwinter-2`. Tooling is Copperline (skill `amiga-copperline`); disk/hunk/HD-image facts are in `amiga-adf-and-hunks`.
+Reference for the behaviour and the gates: `AtariST/gamebench/games/done/midwinter2` (Atari ST). This skill records what carries over and what is genuinely Amiga-specific. The Amiga work is at `games/done/Midwinter-2`. Tooling is Copperline (skill `amiga-copperline`); disk/hunk/HD-image facts are in `amiga-adf-and-hunks`.
 
 ## User preferences (carry over unless told otherwise)
 - **Target:** a fast **Amiga 1200** — 68020/68030, AGA, 2 MB chip + fast RAM, Kickstart 3.1. Delivery is a **hard-disk image** (RDB, one partition per game, boots to Workbench; each game a volume you open and run) plus a fixed VHD and an install zip; the three-floppy set stays supported.
@@ -73,3 +73,10 @@ Reference for the behaviour and the gates: `AtariST/gamebench/games/done/midwint
 - A hot routine's share is not the gain. Chip-bus contention, blitter setup and the game's own front end stay.
 - Prefer stateless rewrites to caches that need many invalidation hooks.
 - Ship measured numbers only, with the machine, scene and measurement method named.
+
+## Releasing a game (as on the ST)
+1. Move `games/in_progress/<game>` to `games/done/<game>` (plain `mv` for the git-ignored `originals/`, `work/build`), fix every path (`grep -rl in_progress`), add `VERSION` (one place for the version; the credit line is `<Game> v<VER> enhanced by dad_prg`).
+2. `games/done/<game>/tools/<g>release.py` builds from the **originals** into `dist/` (git-ignored): `<Game>_v<VER>_patched_floppies_<date>.zip` (ADFs + README) and `<Game>_v<VER>_patched_<date>.zip` (folder of files for the root of the user's partition + README). It has a `--check` that re-derives the contents and compares; `tests/test_release.py` runs it and boots the floppies.
+3. Credit at start-up: floppy `s/startup-sequence` echo, the HD `Play` script, READMEs, zip names. Remove cracker text and any `startup-sequence.bak` that keeps it.
+4. Write `REPORT.md` (changes with their gates, md5s of the zips, an honest not-done list) and update README/PLAN. Build tools that shell out to `xdftool` must pass arguments as separate items (`adf.xdftool(img, "unpack", dir)`): a single string `"unpack dir"` fails, and a failed step can leave a plain copy of the input behind (the old `d1_skipintro.adf` was an unpatched copy for exactly this reason): check the artefact, not just the exit code.
+5. Tests must never boot the shipped image or zips in place (Workbench writes to the disk): use scratch copies.

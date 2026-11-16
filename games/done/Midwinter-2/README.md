@@ -2,7 +2,7 @@
 
 *Midwinter II: Flames of Freedom*, Rainbird, 1991 (Amiga release 1.7, 7 September 1991). Port of the finished Atari ST work in `AtariST/gamebench/games/done/midwinter2`: same behaviour, Amiga implementation, targeting a fast **Amiga 1200** (shipped as a hard-disk image; the floppy set is still supported).
 
-Status (2026-11-15): **direct controls done and gated; the game boots and plays on an emulated A1200 / Kickstart 3.1 from a hard-disk image and from three floppies** (Copperline). Open: world-rate (VBL-locked vs CPU-bound), rendering, credit line, A500/A600 runs, real-hardware test. See [`PLAN.md`](PLAN.md), the top-level README (run, build, test) and `tests/`.
+Status (2026-11-16): **v1.0 released** (`dist/`: floppy zip + hard-drive zip; build with `tools/mw2release.py`). It has direct controls, the restored M/J/K device screen and the `vX.Y enhanced by dad_prg` start-up credit. Not in v1.0: world-rate decoupling, rendering speed-ups, real-hardware and A500/A600 testing. See [`REPORT.md`](REPORT.md), [`PLAN.md`](PLAN.md), the top-level README (run, build, test) and `tests/`.
 
 ## Chosen release: the three-disk SPL set
 

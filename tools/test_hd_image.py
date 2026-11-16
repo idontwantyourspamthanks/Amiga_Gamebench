@@ -21,7 +21,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
-sys.path.insert(0, str(ROOT / "games" / "in_progress" / "Midwinter-2" / "tools"))
+sys.path.insert(0, str(ROOT / "games" / "done" / "Midwinter-2" / "tools"))
 from clharness import CopperlineError, Machine  # noqa: E402
 import amigahd  # noqa: E402
 import amigabin  # noqa: E402

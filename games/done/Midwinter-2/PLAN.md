@@ -27,7 +27,7 @@ satisfy every "insert graphics/missions disk into any drive" prompt). The front 
 -> thumbs-up (264,16) -> 3D cockpit (~30 s of set-up). Automated: `tools/test_hd_image.py`.
 
 
-Deliverable (done, on Copperline): `games/in_progress/Midwinter-2/tools/mw2cl.py` (`MW2(Session)`):
+Deliverable (done, on Copperline): `games/done/Midwinter-2/tools/mw2cl.py` (`MW2(Session)`):
 - `boot()` waits for the hallway by region digest; `to_cockpit()` plays the front end with real mouse counts and held presses;
 - cursor steering closed-loop on the game's own X/Y words (hunk 1 +0x308E/+0x3090);
 - `locate()` finds the steering path in the loaded code hunk by skeleton (no RAM dump);
@@ -72,7 +72,7 @@ CODE hunk 0 (not a separate hunk), the sites become `jmp <blob>`, and the tool
 rewrites the hunk-0 RELOC32 table so the blob's operands and the two `jmp`
 operands relocate correctly. No startup-sequence changes, nothing to allocate,
 and the patch survives disk swaps because it lives in the loaded code. See
-`tools/mw2patch.py` and `games/in_progress/Midwinter-2/patches/p5_direct.s`.
+`tools/mw2patch.py` and `games/done/Midwinter-2/patches/p5_direct.s`.
 
 ## P4 — Timing (measurement open)
 
@@ -116,7 +116,7 @@ Only after timing and controls are gated. Candidate work, in order of expected v
 
 Every change needs an identical-picture gate and a measured fps gain. No screenmode changes without approval.
 
-## P7 — Release (in progress)
+## P7 — Release (v1.0 done; see below)
 
 Delivered 2026-11-15 (Copperline; supersedes the 2026-11-14 FS-UAE build): an RDB hard-disk
 image `dist/Amiga_enhanced_games_<date>.hdf` (+ fixed `.vhd`): DH0 Workbench 3.1 (boots to the
@@ -126,9 +126,16 @@ then `Play` (an IconX project icon: a plain tool icon Gurus, a CLI-context launc
 (static, VHD, HD boot, bit-exact LoadSeg, desktop click-through, direct-controls gate on the
 patched volume with the unpatched volume as negative control). Found and fixed on the way: RDB
 `MaxTransfer` must be 0x1FE00 or reads past 128 KiB are wrong (the real cause of the Gurus seen
-on HD). The install zip (`tools/make_amiga_zip.py`) is unchanged and not yet re-tested.
-Not verified: real hardware (A1200 CF/IDE), A500/A600 paths. Still to do: the credit line,
-the cold-boot matrix, single-floppy-drive swaps.
+on HD).
+
+**Release v1.0 (2026-11-16).** `tools/mw2release.py` builds two zips into `dist/`: floppies and HD files (see
+the top-level README and `REPORT.md`). The credit line `Midwinter II v1.0 enhanced by dad_prg` is shown at
+start-up (floppy start-up-sequence, `Play` script) and in the READMEs. `Play` has no volume name (IconX runs
+it in the icon's drawer), so the same files work on any partition. The release floppy disk 1 has a clean
+start-up (no cracker text, `startup-sequence.bak` removed) and INTRO's demo loop skipped. Found on the way:
+the earlier `d1_skipintro.adf` was an unpatched copy (a failed `unpack` in `mk_testdisks.py`), so the old floppy
+runs had played the full cracktro. Not verified: real hardware (A1200 CF/IDE), A500/A600 paths, floppy swaps
+with a single drive. Open and **not** in v1.0: world-rate decoupling (P4), rendering (P6), in-game credit text.
 
 
 - ADF set (3 disks) built from the SPL originals; startup sequence replaced: credit line `vX.Y enhanced by dad_prg`, `INTRO` skipped, `mwII` started.

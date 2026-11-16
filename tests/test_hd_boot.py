@@ -17,17 +17,21 @@ VOLUME_ICON = (112, 124)                    # "Midwinter2" on the Workbench desk
 PLAY_ICON = (146, 97)                       # "Play" in the opened Midwinter2 drawer
 
 
-def test_boots_to_workbench_with_every_volume(image, goldens):
-    with Session(Machine(ide=image)) as s:
+def test_boots_to_workbench_with_every_volume(image, scratch_dir, goldens):
+    scratch = scratch_dir / "desktop.hdf"
+    shutil.copyfile(image, scratch)                      # Workbench writes to the disk: never boot the shipped image
+    with Session(Machine(ide=scratch)) as s:
         s.run_to(30)
         goldens.check("desktop_icons_a1200_ks31", s.region_digest(*DESKTOP_ICONS))
 
 
-def test_vhd_boots_to_the_same_desktop_as_the_hdf(image, goldens):
+def test_vhd_boots_to_the_same_desktop_as_the_hdf(image, scratch_dir, goldens):
     vhd = image.with_suffix(".vhd")
     if not vhd.exists():
         pytest.skip("no .vhd next to the image")
-    with Session(Machine(ide=vhd)) as s:
+    scratch = scratch_dir / "desktop.vhd"
+    shutil.copyfile(vhd, scratch)
+    with Session(Machine(ide=scratch)) as s:
         s.run_to(30)
         goldens.check("desktop_icons_a1200_ks31", s.region_digest(*DESKTOP_ICONS))
 

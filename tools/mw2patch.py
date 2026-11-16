@@ -6,7 +6,7 @@
     python3 tools/mw2patch.py apply-adf IN.adf OUT.adf MWII
     python3 tools/mw2patch.py verify    MWII PATCHED
 
-What is patched (see games/in_progress/Midwinter-2/patches/p5_direct.s):
+What is patched (see games/done/Midwinter-2/patches/p5_direct.s):
 
   * the in-game input accumulate routine (mode 2 of the input poller)  -> `jmp blob.handler`
   * the X-axis steering consumer                                      -> `jmp blob.cons`
@@ -39,7 +39,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
 import amigabin  # noqa: E402
 
-ASM = ROOT / "games" / "in_progress" / "Midwinter-2" / "patches" / "p5_direct.s"
+ASM = ROOT / "games" / "done" / "Midwinter-2" / "patches" / "p5_direct.s"
 
 # ---- site skeletons (operands excluded, so they match any linked layout) ------------------
 

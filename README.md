@@ -25,7 +25,7 @@ All emulation, navigation, measurement and testing uses [Copperline](https://cop
 | Hard-disk image (RDB: Workbench 3.1 + one volume per game) and fixed VHD | built; boots to the Workbench desktop |
 | Tests | `python3 -m pytest tests` passes (static, VHD, HD boot, bit-exact load, desktop click-through, direct-controls gate; about 5 minutes) |
 | Midwinter II on A1200 / KS 3.1 | boots and plays from the HD image and from three floppies |
-| Direct controls | done and gated tick by tick (`patches/p5_direct.s`, `tools/mw2patch.py`, `tests/test_mw2_direct_controls.py`); method in `games/in_progress/Midwinter-2/work/notes/direct_controls_howto.md`. The retail "Press M / J / K" device screen, which the SPL crack had removed, is restored by the same patch tool |
+| Direct controls | done and gated tick by tick (`patches/p5_direct.s`, `tools/mw2patch.py`, `tests/test_mw2_direct_controls.py`); method in `games/done/Midwinter-2/work/notes/direct_controls_howto.md`. The retail "Press M / J / K" device screen, which the SPL crack had removed, is restored by the same patch tool |
 | World rate (VBL-locked or CPU-bound?) | open: needs the Copperline measurement (`PLAN.md` P4) |
 | Rendering, credit line, A500/A600 runs, real-hardware test | not started / not verified |
 | Midwinter (1) | disks collected; not started |
@@ -34,7 +34,7 @@ All emulation, navigation, measurement and testing uses [Copperline](https://cop
 
 ```sh
 tools/fetch_copperline.sh                 # once
-python3 tools/mw2patch.py apply <MWII from disk 1> games/in_progress/Midwinter-2/work/build/MWII_direct   # once
+python3 tools/mw2patch.py apply <MWII from disk 1> games/done/Midwinter-2/work/build/MWII_direct   # once
 python3 tools/make_amiga_hd.py            # dist/Amiga_enhanced_games_<date>.hdf + .vhd + .layout.txt
 
 dist/run_hd.sh                            # Workbench desktop; open Midwinter2, double-click Play
@@ -60,7 +60,16 @@ An RDB disk (so it mounts in emulators and on real hardware), geometry 16 heads 
 - Adding a game = a `Part(...)` and a `stage_*` function in `tools/make_amiga_hd.py`, an entry in `tools/amigahd.py` `GAMES`, and a game harness (see the skill).
 - The shipped image is never touched by tests or `run_hd.sh GAME`: they boot a scratch copy whose `S:User-Startup` starts the game (`tools/amigahd.py scratch`).
 
-`dist/Midwinter2-Amiga-hd-<date>.zip` (`tools/make_amiga_zip.py`) is the install-into-your-own-partition alternative.
+## Release (what goes to a user)
+
+`python3 games/done/Midwinter-2/tools/mw2release.py` builds, from the original disks and the verified patches, into `games/done/Midwinter-2/dist/` (git-ignored):
+
+| zip | contents |
+|---|---|
+| `Midwinter2_v<VER>_patched_floppies_<date>.zip` | three ADFs (disk 1 patched: direct controls, device selector, clean start-up with the credit line) + README |
+| `Midwinter2_v<VER>_patched_<date>.zip` | `MW2HD/`: the files to copy to the **root** of the user's chosen partition, `Play` + `Play.info`, README |
+
+`<VER>` is `games/done/Midwinter-2/VERSION`; the credit line `Midwinter II v<VER> enhanced by dad_prg` is shown at start-up (floppy start-up-sequence, the `Play` script) and in the READMEs. `--check` (also `tests/test_release.py`) re-derives what the zips must contain and compares.
 
 ## Tests
 
@@ -83,7 +92,7 @@ Goldens are frame hashes in `tests/goldens.json` (no pictures are committed) and
 | `tools/adf.py`, `amigabin.py`, `m68dis.py` | ADF images, hunk load files, 68k disassembler |
 | `tools/fetch_copperline.sh` | install Copperline into `tools/bin/` (git-ignored) |
 | `tests/` | pytest suite and `goldens.json` |
-| `games/in_progress/<game>/` | per-game README, PLAN, `patches/`, `tools/` (game harness, patch tool), `work/notes/` |
+| `games/done/<game>/`, `games/in_progress/<game>/` | per-game README, PLAN, REPORT (done), `VERSION`, `patches/`, `tools/` (game harness, patch tool, `mw2release.py`), `work/notes/`, `dist/` (release zips, git-ignored). A finished game moves from `in_progress/` to `done/`, as on the ST |
 | `kickstarts/`, `os/` | your Kickstart ROMs and Workbench disks (git-ignored) |
 | `.omp/skills/` | method, Copperline, ADF/hunk and delegation notes for the agent |
 
@@ -102,7 +111,7 @@ Goldens are frame hashes in `tests/goldens.json` (no pictures are committed) and
 
 ## Getting the game files
 
-The chosen Midwinter II release is the three-disk SPL set. Put your copies in `games/in_progress/Midwinter-2/originals/` (git-ignored); the per-game README lists MD5 sums.
+The chosen Midwinter II release is the three-disk SPL set. Put your copies in `games/done/Midwinter-2/originals/` (git-ignored); the per-game README lists MD5 sums.
 
 ## Credits and legal
 

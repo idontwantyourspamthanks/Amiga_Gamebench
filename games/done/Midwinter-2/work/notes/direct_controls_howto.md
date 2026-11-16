@@ -16,7 +16,7 @@ Run all commands from the repo root `/home/ryan/Code/Amiga/gamebench`.
 Everything below is exercised by `tests/test_mw2_direct_controls.py` (`python3 -m pytest tests/test_mw2_direct_controls.py`).
 
 ```python
-import sys; sys.path[:0] = ['tools', 'games/in_progress/Midwinter-2/tools']
+import sys; sys.path[:0] = ['tools', 'games/done/Midwinter-2/tools']
 import struct, mw2cl
 from clharness import Machine
 
@@ -53,10 +53,10 @@ What was built: **direct steering**, the counterpart of the Atari ST `p5_ctl_*` 
   stops when the mouse stops. No persistent "yoke".
 - Joystick (`J`) / keypad keys (`K`): a constant turn rate while the direction is held, zero after
   release, pro rata for a tap shorter than a tick.
-- Result: `games/in_progress/Midwinter-2/work/build/d1_direct.adf` (git-ignored; rebuild it, §6).
+- Result: `games/done/Midwinter-2/work/build/d1_direct.adf` (git-ignored; rebuild it, §6).
 
-Files: patch source `games/in_progress/Midwinter-2/patches/p5_direct.s`, patch tool `tools/mw2patch.py`,
-probe helpers `games/in_progress/Midwinter-2/tools/mw2probe.py` and `mw2harness.py`, harness
+Files: patch source `games/done/Midwinter-2/patches/p5_direct.s`, patch tool `tools/mw2patch.py`,
+probe helpers `games/done/Midwinter-2/tools/mw2probe.py` and `mw2harness.py`, harness
 `tools/amigaharness.py`, disassembler `tools/m68dis.py`.
 
 ---------------------------------------------------------------------------------------------------
@@ -87,7 +87,7 @@ All menu presses must be HELD about one second; a click is ignored. This is scri
 
 ```python
 import sys, time
-sys.path.insert(0, 'tools'); sys.path.insert(0, 'games/in_progress/Midwinter-2/tools')
+sys.path.insert(0, 'tools'); sys.path.insert(0, 'games/done/Midwinter-2/tools')
 import mw2harness as mw, mw2probe as pr
 
 h = mw.boot_to_cockpit(mw.D1_DIRECT, extra=['joystick_port_1=keyboard'])   # ~2.5 minutes, warp mode
@@ -318,10 +318,10 @@ addresses in the rest of the program are relocated from the original hunk layout
 ### 5.1 Build the patched MWII and the ADF
 
 ```
-xdftool "games/in_progress/Midwinter-2/originals/Midwinter II - Flames of Freedom v1.7.9.1991 (1991-09-07)(Rainbird)(Disk 1 of 3)[cr SPL].adf" read MWII /tmp/MWII_orig
+xdftool "games/done/Midwinter-2/originals/Midwinter II - Flames of Freedom v1.7.9.1991 (1991-09-07)(Rainbird)(Disk 1 of 3)[cr SPL].adf" read MWII /tmp/MWII_orig
 python3 tools/mw2patch.py find /tmp/MWII_orig
 python3 tools/mw2patch.py apply /tmp/MWII_orig /tmp/MWII_new
-python3 tools/mw2patch.py apply-adf games/in_progress/Midwinter-2/work/build/d1_skipintro.adf games/in_progress/Midwinter-2/work/build/d1_direct.adf /tmp/MWII_orig
+python3 tools/mw2patch.py apply-adf games/done/Midwinter-2/work/build/d1_skipintro.adf games/done/Midwinter-2/work/build/d1_direct.adf /tmp/MWII_orig
 ```
 
 Expected output of `find`:

@@ -37,8 +37,10 @@ from typing import Callable, Optional
 from amigaicon import project_icon
 
 ROOT = Path(__file__).resolve().parent.parent
-ORIG = ROOT / "games/in_progress/Midwinter-2/originals"
-BUILD = ROOT / "games/in_progress/Midwinter-2/work/build"
+ORIG = ROOT / "games/done/Midwinter-2/originals"
+BUILD = ROOT / "games/done/Midwinter-2/work/build"
+VERSION = (ROOT / "games/done/Midwinter-2/VERSION").read_text().strip()
+CREDIT = f"Midwinter II v{VERSION} enhanced by dad_prg"       # the standing credit line, shown at start-up
 WB = ROOT / "os/WorkBench/amiga-os-310-workbench.adf"
 
 D1 = ORIG / "Midwinter II - Flames of Freedom v1.7.9.1991 (1991-09-07)(Rainbird)(Disk 1 of 3)[cr SPL].adf"
@@ -91,7 +93,7 @@ def stage_workbench(stage: Path, src: Path) -> None:
     )
 
 
-def stage_mw2(stage: Path, src: Path, exe: Optional[Path], volume: str) -> None:
+def stage_mw2(stage: Path, src: Path, exe: Optional[Path]) -> None:
     """What the game's own DH0 installer (dh0_install1) copies, at the volume root."""
     for adf, name in ((D1, "d1"), (D2, "d2"), (D3, "d3")):
         if not (src / name).exists():
@@ -106,21 +108,25 @@ def stage_mw2(stage: Path, src: Path, exe: Optional[Path], volume: str) -> None:
         shutil.copyfile(d1 / name, stage / name)
     shutil.copytree(d2, stage, dirs_exist_ok=True)
     shutil.copytree(d3, stage, dirs_exist_ok=True)
-    stage_play(stage, src, volume)
+    stage_play(stage, src)
 
 
 PLAY_ICON_TEMPLATE = "System/Shell.info"      # a project icon from Workbench 3.1; only its picture is reused
 
 
-def stage_play(stage: Path, src: Path, volume: str) -> None:
-    """`Play` + `Play.info`: double-click starts the game.
+PLAY_SCRIPT = f'echo "{CREDIT}"\nmwII\n'
+
+
+def stage_play(stage: Path, src: Path) -> None:
+    """`Play` + `Play.info`: double-click starts the game (and shows the credit line).
 
     Started directly as a Workbench tool (a plain tool icon) mwII dies with a Guru; run from a
     CLI (the floppy boot's startup-sequence, S:User-Startup, or this script) it works.  Cause
     (no CLI vs the icon's stack) was not isolated.  A project icon whose default tool is
-    C:IconX runs the script, which CDs to the volume root first (the game only works there).
+    C:IconX runs the script in the icon's own drawer, so the script needs no volume name and the
+    same Play works on any partition the files are copied to (verified: hallway reached).
     """
-    (stage / "Play").write_text(f"CD {volume}:\nmwII\n")
+    (stage / "Play").write_text(PLAY_SCRIPT)
     wb = next(p for p in (src / "wb").iterdir() if p.is_dir())
     (stage / "Play.info").write_bytes(project_icon((wb / PLAY_ICON_TEMPLATE).read_bytes(), "C:IconX", stack=40000))
 
@@ -137,8 +143,8 @@ class Part:
 def parts(patched_exe: Path) -> list[Part]:
     return [
         Part("DH0", "Workbench", 12, True, stage_workbench),
-        Part("DH1", "Midwinter2", 8, False, lambda s, src: stage_mw2(s, src, patched_exe, "Midwinter2")),
-        Part("DH2", "Midwinter2Orig", None, False, lambda s, src: stage_mw2(s, src, None, "Midwinter2Orig")),
+        Part("DH1", "Midwinter2", 8, False, lambda s, src: stage_mw2(s, src, patched_exe)),
+        Part("DH2", "Midwinter2Orig", None, False, lambda s, src: stage_mw2(s, src, None)),
     ]
 
 
@@ -265,9 +271,9 @@ def write_layout(out: Path, report: list[dict], vhd: Path) -> Path:
         "  Needs Kickstart 3.1 (FFS and Workbench 3.1 are 2.0+ only). Tested in Copperline: A1200 + KS 3.1.",
         "",
         "Rebuild and test",
-        "  python3 tools/mw2patch.py apply <MWII from disk 1> games/in_progress/Midwinter-2/work/build/MWII_direct",
+        "  python3 tools/mw2patch.py apply <MWII from disk 1> games/done/Midwinter-2/work/build/MWII_direct",
         "  python3 tools/make_amiga_hd.py",
-        "  python3 tools/make_amiga_zip.py            (the install zip)",
+        "  python3 games/done/Midwinter-2/tools/mw2release.py   (the two release zips)",
         "  python3 -m pytest tests                    (static + emulator tests, ~5 minutes)",
         "  python3 tools/test_hd_image.py dist/<this>.hdf mw2     (one game from power-on to its in-game view)",
     ]
