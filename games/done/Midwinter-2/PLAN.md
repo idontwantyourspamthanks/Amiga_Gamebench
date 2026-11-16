@@ -137,12 +137,12 @@ the earlier `d1_skipintro.adf` was an unpatched copy (a failed `unpack` in `mk_t
 runs had played the full cracktro. Not verified: real hardware (A1200 CF/IDE), A500/A600 paths, floppy swaps
 with a single drive. Open and **not** in v1.0: world-rate decoupling (P4), rendering (P6), in-game credit text.
 
-
-- ADF set (3 disks) built from the SPL originals; startup sequence replaced: credit line `vX.Y enhanced by dad_prg`, `INTRO` skipped, `mwII` started.
-- No hard-disk dependency; test with a single floppy drive and the required disk swaps.
-- Cold-boot matrix: A500 1.3, A500+ 2.04, A600, A1200 3.1 stock, A1200/1230 — as far as ROMs allow.
-- `README.md` / `PATCHES.TXT` / zip names carry the version.
-- A final report in this folder with pasted gate outputs.
+Release checklist (original wording kept, with status):
+- [done] ADF set (3 disks) from the SPL originals; start-up sequence replaced: credit line, `INTRO` run with its demo loop skipped, `mwII` started.
+- [done] zip names and READMEs carry the version (`VERSION`); `REPORT.md` written. Hard-disk delivery was added (the user moved to HD): `MW2HD/` zip.
+- [open] single-floppy-drive run with the required disk swaps (the tested set uses three drives).
+- [open] cold-boot matrix: A500 1.3, A500+ 2.04, A600, A1200 stock/accelerated; real hardware.
+- [open] in-game credit text; world-rate (P4) and rendering (P6) work, which would be a v1.1.
 
 ## Open questions
 
